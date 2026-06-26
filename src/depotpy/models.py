@@ -7,6 +7,13 @@ from enum import Enum
 from pathlib import Path
 
 
+class PackagePreference(Enum):
+    """Preference for package format when downloading."""
+
+    WHEEL = "wheel"
+    SOURCE = "source"
+
+
 class DependencyManager(Enum):
     """Supported dependency managers."""
 
@@ -80,3 +87,4 @@ class PackOptions:
     python_version: str | None = None
     exclude: list[str] = field(default_factory=list)
     include_extras: list[str] = field(default_factory=list)
+    prefer: PackagePreference = PackagePreference.WHEEL

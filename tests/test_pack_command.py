@@ -16,6 +16,7 @@ def _make_args(**kwargs):
         "python_version": None,
         "exclude": [],
         "include_extras": [],
+        "prefer": "wheel",
     }
     defaults.update(kwargs)
     return type("Args", (), defaults)()

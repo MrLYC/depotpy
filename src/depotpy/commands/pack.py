@@ -7,7 +7,7 @@ import logging
 import sys
 from pathlib import Path
 
-from depotpy.models import PackOptions
+from depotpy.models import PackagePreference, PackOptions
 from depotpy.packer import PackBuilder
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,7 @@ def run_pack(args: argparse.Namespace) -> int:
         python_version=args.python_version,
         exclude=args.exclude,
         include_extras=args.include_extras,
+        prefer=PackagePreference(args.prefer),
     )
 
     try:

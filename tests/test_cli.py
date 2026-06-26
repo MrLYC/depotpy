@@ -32,6 +32,12 @@ class TestCreateParser:
         assert args.platforms is None
         assert args.exclude == []
         assert args.include_extras == []
+        assert args.prefer == "wheel"
+
+    def test_pack_prefer_source(self):
+        parser = create_parser()
+        args = parser.parse_args(["pack", "/some/project", "--prefer", "source"])
+        assert args.prefer == "source"
 
     def test_pack_with_options(self):
         parser = create_parser()

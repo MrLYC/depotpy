@@ -139,6 +139,7 @@ class PackBuilder:
                 python_version=python_version,
                 exclude=self.options.exclude or None,
                 include_extras=self.options.include_extras or None,
+                prefer=self.options.prefer,
             )
 
             logger.info("Downloaded %d package files", len(packages))

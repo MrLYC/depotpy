@@ -8,7 +8,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from depotpy.models import DependencyManager, PackageFile, ProjectInfo
+from depotpy.models import DependencyManager, PackageFile, PackagePreference, ProjectInfo
 from depotpy.platforms import PlatformTag
 
 logger = logging.getLogger(__name__)
@@ -73,19 +73,27 @@ def _scan_downloaded_files(download_dir: Path) -> list[PackageFile]:
     return packages
 
 
+def _binary_flag(prefer: PackagePreference) -> str:
+    """Return the pip/uv binary preference flag."""
+    if prefer == PackagePreference.SOURCE:
+        return "--no-binary=:all:"
+    return "--only-binary=:all:"
+
+
 def _build_pip_download_cmd(
     dependencies: list[str],
     download_dir: Path,
     platform: PlatformTag,
     python_version: str | None = None,
     exclude: list[str] | None = None,
+    prefer: PackagePreference = PackagePreference.WHEEL,
 ) -> list[str]:
     """Build a pip download command."""
     cmd = [
         "pip", "download",
         "--dest", str(download_dir),
         "--platform", platform.tag,
-        "--only-binary=:all:",
+        _binary_flag(prefer),
     ]
 
     if python_version:
@@ -108,13 +116,14 @@ def _build_uv_download_cmd(
     platform: PlatformTag,
     python_version: str | None = None,
     exclude: list[str] | None = None,
+    prefer: PackagePreference = PackagePreference.WHEEL,
 ) -> list[str]:
     """Build a uv pip download command."""
     cmd = [
         "uv", "pip", "download",
         "--dest", str(download_dir),
         "--platform", platform.tag,
-        "--only-binary=:all:",
+        _binary_flag(prefer),
     ]
 
     if python_version:
@@ -157,13 +166,14 @@ def _download_for_platform_pip(
     platform: PlatformTag,
     python_version: str | None = None,
     exclude: list[str] | None = None,
+    prefer: PackagePreference = PackagePreference.WHEEL,
 ) -> None:
     """Download packages for a specific platform using pip."""
     if not dependencies:
         return
 
     cmd = _build_pip_download_cmd(
-        dependencies, download_dir, platform, python_version, exclude
+        dependencies, download_dir, platform, python_version, exclude, prefer
     )
     _run_download_cmd(cmd, download_dir)
 
@@ -174,13 +184,14 @@ def _download_for_platform_uv(
     platform: PlatformTag,
     python_version: str | None = None,
     exclude: list[str] | None = None,
+    prefer: PackagePreference = PackagePreference.WHEEL,
 ) -> None:
     """Download packages for a specific platform using uv."""
     if not dependencies:
         return
 
     cmd = _build_uv_download_cmd(
-        dependencies, download_dir, platform, python_version, exclude
+        dependencies, download_dir, platform, python_version, exclude, prefer
     )
     _run_download_cmd(cmd, download_dir)
 
@@ -192,6 +203,7 @@ def download_packages(
     python_version: str | None = None,
     exclude: list[str] | None = None,
     include_extras: list[str] | None = None,
+    prefer: PackagePreference = PackagePreference.WHEEL,
 ) -> list[PackageFile]:
     """Download all dependency packages for the given platforms.
 
@@ -238,6 +250,7 @@ def download_packages(
                 platform=platform,
                 python_version=python_version,
                 exclude=exclude,
+                prefer=prefer,
             )
         except RuntimeError:
             # If the preferred tool fails and it's not pip, retry with pip
@@ -253,6 +266,7 @@ def download_packages(
                     platform=platform,
                     python_version=python_version,
                     exclude=exclude,
+                    prefer=prefer,
                 )
             else:
                 raise

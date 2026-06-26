@@ -52,6 +52,12 @@ def create_parser() -> argparse.ArgumentParser:
         default=[],
         help="Include extras dependencies (can be specified multiple times)",
     )
+    pack_parser.add_argument(
+        "--prefer",
+        choices=["wheel", "source"],
+        default="wheel",
+        help="Prefer wheel or source packages (default: wheel)",
+    )
 
     # inspect subcommand
     inspect_parser = subparsers.add_parser(

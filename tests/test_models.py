@@ -6,9 +6,16 @@ from depotpy.models import (
     DependencyManager,
     Manifest,
     PackageFile,
+    PackagePreference,
     PackOptions,
     ProjectInfo,
 )
+
+
+class TestPackagePreference:
+    def test_values(self):
+        assert PackagePreference.WHEEL.value == "wheel"
+        assert PackagePreference.SOURCE.value == "source"
 
 
 class TestDependencyManager:
@@ -127,3 +134,4 @@ class TestPackOptions:
         assert opts.python_version is None
         assert opts.exclude == []
         assert opts.include_extras == []
+        assert opts.prefer == PackagePreference.WHEEL

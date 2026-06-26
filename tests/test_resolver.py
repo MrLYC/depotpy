@@ -6,9 +6,10 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from depotpy.models import DependencyManager, ProjectInfo
+from depotpy.models import DependencyManager, PackagePreference, ProjectInfo
 from depotpy.platforms import MANYLINUX_X86_64, MACOSX_ARM64, PlatformTag
 from depotpy.resolver import (
+    _binary_flag,
     _build_pip_download_cmd,
     _build_uv_download_cmd,
     _compute_sha256,
@@ -30,6 +31,14 @@ class TestComputeSha256:
         f.write_bytes(b"")
         result = _compute_sha256(f)
         assert result == hashlib.sha256(b"").hexdigest()
+
+
+class TestBinaryFlag:
+    def test_wheel(self):
+        assert _binary_flag(PackagePreference.WHEEL) == "--only-binary=:all:"
+
+    def test_source(self):
+        assert _binary_flag(PackagePreference.SOURCE) == "--no-binary=:all:"
 
 
 class TestBuildPipDownloadCmd:
@@ -78,6 +87,20 @@ class TestBuildPipDownloadCmd:
         )
         assert "Requests>=2.0" not in cmd
 
+    def test_prefer_wheel(self, tmp_path):
+        cmd = _build_pip_download_cmd(
+            ["requests"], tmp_path, MANYLINUX_X86_64,
+            prefer=PackagePreference.WHEEL,
+        )
+        assert "--only-binary=:all:" in cmd
+
+    def test_prefer_source(self, tmp_path):
+        cmd = _build_pip_download_cmd(
+            ["requests"], tmp_path, MANYLINUX_X86_64,
+            prefer=PackagePreference.SOURCE,
+        )
+        assert "--no-binary=:all:" in cmd
+
 
 class TestBuildUvDownloadCmd:
     def test_basic(self, tmp_path):
@@ -100,6 +123,13 @@ class TestBuildUvDownloadCmd:
         # uv uses "3.12" format, not "312"
         idx = cmd.index("--python-version")
         assert cmd[idx + 1] == "3.12"
+
+    def test_prefer_source(self, tmp_path):
+        cmd = _build_uv_download_cmd(
+            ["requests"], tmp_path, MANYLINUX_X86_64,
+            prefer=PackagePreference.SOURCE,
+        )
+        assert "--no-binary=:all:" in cmd
 
 
 class TestScanDownloadedFiles:
