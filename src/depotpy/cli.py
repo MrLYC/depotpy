@@ -58,6 +58,12 @@ def create_parser() -> argparse.ArgumentParser:
         default="wheel",
         help="Prefer wheel or source packages (default: wheel)",
     )
+    pack_parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Output result as JSON to stdout",
+    )
 
     # inspect subcommand
     inspect_parser = subparsers.add_parser(
@@ -66,6 +72,12 @@ def create_parser() -> argparse.ArgumentParser:
     inspect_parser.add_argument(
         "bundle_path",
         help="Path to the offline bundle (.tar.gz)",
+    )
+    inspect_parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Output result as JSON to stdout",
     )
 
     # install subcommand
@@ -85,6 +97,12 @@ def create_parser() -> argparse.ArgumentParser:
         choices=["keep", "overwrite", "error"],
         default="keep",
         help="How to handle conflicts with installed packages (default: keep)",
+    )
+    install_parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Output result as JSON to stdout",
     )
 
     return parser

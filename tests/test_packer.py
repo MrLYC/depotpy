@@ -227,9 +227,10 @@ class TestPackBuilder:
         # Need to create the file in the temp dir that download_packages would create
         # Since we mock download_packages, the files won't exist, but the tarball
         # creation will just skip missing files
-        result = builder.build()
-        assert result.exists()
-        assert result.name == "myapp-1.0.0-offline.tar.gz"
+        tarball_path, manifest = builder.build()
+        assert tarball_path.exists()
+        assert tarball_path.name == "myapp-1.0.0-offline.tar.gz"
+        assert manifest.project_name == "myapp"
 
     @patch("depotpy.packer.download_packages")
     @patch("depotpy.packer.detect_project")
@@ -252,7 +253,7 @@ class TestPackBuilder:
             platforms=["manylinux2014_x86_64", "macosx_11_0_arm64"],
         )
         builder = PackBuilder(options)
-        result = builder.build()
+        tarball_path, manifest = builder.build()
 
         # Verify download was called with resolved platforms
         call_kwargs = mock_download.call_args

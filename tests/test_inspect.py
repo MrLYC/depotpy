@@ -81,7 +81,7 @@ class TestBundleInspector:
         inspector = BundleInspector(bundle)
         inspector.print_summary()
 
-        output = capsys.readouterr().out
+        output = capsys.readouterr().err
         assert "myapp" in output
         assert "1.0.0" in output
         assert "3.11" in output
@@ -93,20 +93,38 @@ class TestBundleInspector:
 class TestRunInspect:
     def test_success(self, tmp_path, capsys):
         bundle = _create_test_bundle(tmp_path)
-        args = type("Args", (), {"bundle_path": str(bundle)})()
+        args = type("Args", (), {"bundle_path": str(bundle), "json_output": False})()
         result = run_inspect(args)
         assert result == 0
 
-        output = capsys.readouterr().out
+        output = capsys.readouterr().err
         assert "myapp" in output
 
+    def test_success_json(self, tmp_path, capsys):
+        bundle = _create_test_bundle(tmp_path)
+        args = type("Args", (), {"bundle_path": str(bundle), "json_output": True})()
+        result = run_inspect(args)
+        assert result == 0
+
+        data = json.loads(capsys.readouterr().out)
+        assert data["success"] is True
+        assert data["project_name"] == "myapp"
+        assert len(data["packages"]) == 2
+
     def test_nonexistent_file(self, tmp_path, capsys):
-        args = type("Args", (), {"bundle_path": str(tmp_path / "nope.tar.gz")})()
+        args = type("Args", (), {"bundle_path": str(tmp_path / "nope.tar.gz"), "json_output": False})()
+        result = run_inspect(args)
+        assert result == 1
+        assert "Error" in capsys.readouterr().err
+
+    def test_nonexistent_json(self, tmp_path, capsys):
+        args = type("Args", (), {"bundle_path": str(tmp_path / "nope.tar.gz"), "json_output": True})()
         result = run_inspect(args)
         assert result == 1
 
-        err = capsys.readouterr().err
-        assert "Error" in err
+        data = json.loads(capsys.readouterr().out)
+        assert data["success"] is False
+        assert "error" in data
 
     def test_bad_bundle_no_manifest(self, tmp_path, capsys):
         bundle_path = tmp_path / "bad.tar.gz"
@@ -116,9 +134,7 @@ class TestRunInspect:
             info.size = len(data)
             tar.addfile(info, fileobj=io.BytesIO(data))
 
-        args = type("Args", (), {"bundle_path": str(bundle_path)})()
+        args = type("Args", (), {"bundle_path": str(bundle_path), "json_output": False})()
         result = run_inspect(args)
         assert result == 1
-
-        err = capsys.readouterr().err
-        assert "Error" in err
+        assert "Error" in capsys.readouterr().err

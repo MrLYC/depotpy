@@ -230,21 +230,47 @@ class TestRunInstall:
 
         bundle = _create_test_bundle(tmp_path)
         args = type("Args", (), {
-            "bundle_path": str(bundle), "target": None, "on_conflict": "keep",
+            "bundle_path": str(bundle), "target": None,
+            "on_conflict": "keep", "json_output": False,
+        })()
+        result = run_install(args)
+        assert result == 0
+        assert "Successfully installed" in capsys.readouterr().err
+
+    @patch("depotpy.installer.subprocess.run")
+    def test_success_json(self, mock_run, tmp_path, capsys):
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        bundle = _create_test_bundle(tmp_path)
+        args = type("Args", (), {
+            "bundle_path": str(bundle), "target": None,
+            "on_conflict": "keep", "json_output": True,
         })()
         result = run_install(args)
         assert result == 0
 
-        output = capsys.readouterr().out
-        assert "Successfully installed" in output
+        data = json.loads(capsys.readouterr().out)
+        assert data["success"] is True
+        assert data["on_conflict"] == "keep"
 
     def test_nonexistent(self, tmp_path, capsys):
         args = type("Args", (), {
             "bundle_path": str(tmp_path / "nope.tar.gz"),
-            "target": None, "on_conflict": "keep",
+            "target": None, "on_conflict": "keep", "json_output": False,
         })()
         result = run_install(args)
         assert result == 1
+
+    def test_nonexistent_json(self, tmp_path, capsys):
+        args = type("Args", (), {
+            "bundle_path": str(tmp_path / "nope.tar.gz"),
+            "target": None, "on_conflict": "keep", "json_output": True,
+        })()
+        result = run_install(args)
+        assert result == 1
+
+        data = json.loads(capsys.readouterr().out)
+        assert data["success"] is False
 
     def test_bad_bundle(self, tmp_path, capsys):
         bundle_path = tmp_path / "bad.tar.gz"
@@ -256,7 +282,7 @@ class TestRunInstall:
 
         args = type("Args", (), {
             "bundle_path": str(bundle_path),
-            "target": None, "on_conflict": "keep",
+            "target": None, "on_conflict": "keep", "json_output": False,
         })()
         result = run_install(args)
         assert result == 1
@@ -269,7 +295,7 @@ class TestRunInstall:
         bundle = _create_test_bundle(tmp_path)
         args = type("Args", (), {
             "bundle_path": str(bundle),
-            "target": None, "on_conflict": "keep",
+            "target": None, "on_conflict": "keep", "json_output": False,
         })()
         result = run_install(args)
         assert result == 1
@@ -281,10 +307,8 @@ class TestRunInstall:
         bundle = _create_test_bundle(tmp_path)
         args = type("Args", (), {
             "bundle_path": str(bundle),
-            "target": None, "on_conflict": "error",
+            "target": None, "on_conflict": "error", "json_output": False,
         })()
         result = run_install(args)
         assert result == 1
-
-        err = capsys.readouterr().err
-        assert "conflicts" in err.lower()
+        assert "conflicts" in capsys.readouterr().err.lower()

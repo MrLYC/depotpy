@@ -3,22 +3,18 @@
 from __future__ import annotations
 
 import argparse
-import logging
-import sys
 from pathlib import Path
 
+from depotpy.manifest import manifest_to_dict
 from depotpy.models import PackagePreference, PackOptions
+from depotpy.output import error_json, print_error, print_json, print_text, setup_logging
 from depotpy.packer import PackBuilder
-
-logger = logging.getLogger(__name__)
 
 
 def run_pack(args: argparse.Namespace) -> int:
     """Execute the pack subcommand."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s: %(message)s",
-    )
+    setup_logging()
+    json_output = getattr(args, "json_output", False)
 
     options = PackOptions(
         project_path=Path(args.project_path),
@@ -32,15 +28,18 @@ def run_pack(args: argparse.Namespace) -> int:
 
     try:
         builder = PackBuilder(options)
-        tarball_path = builder.build()
-        print(f"Bundle created: {tarball_path}")
+        tarball_path, manifest = builder.build()
+        if json_output:
+            result = manifest_to_dict(manifest)
+            result["bundle_path"] = str(tarball_path)
+            result["success"] = True
+            print_json(result)
+        else:
+            print_text(f"Bundle created: {tarball_path}")
         return 0
-    except FileNotFoundError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 1
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 1
-    except RuntimeError as e:
-        print(f"Error: {e}", file=sys.stderr)
+    except (FileNotFoundError, ValueError, RuntimeError) as e:
+        if json_output:
+            error_json(str(e))
+        else:
+            print_error(str(e))
         return 1

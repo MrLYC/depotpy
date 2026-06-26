@@ -100,11 +100,11 @@ class PackBuilder:
     def __init__(self, options: PackOptions) -> None:
         self.options = options
 
-    def build(self) -> Path:
+    def build(self) -> tuple[Path, Manifest]:
         """Build the offline bundle.
 
         Returns:
-            Path to the created .tar.gz file.
+            Tuple of (path to the created .tar.gz file, manifest).
 
         Raises:
             FileNotFoundError: If project path doesn't exist.
@@ -165,4 +165,4 @@ class PackBuilder:
             )
 
             logger.info("Created bundle: %s", tarball_path)
-            return tarball_path
+            return tarball_path, manifest

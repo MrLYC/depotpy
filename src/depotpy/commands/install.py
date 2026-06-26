@@ -3,22 +3,17 @@
 from __future__ import annotations
 
 import argparse
-import logging
-import sys
 from pathlib import Path
 
 from depotpy.installer import BundleInstaller
 from depotpy.models import ConflictPolicy
-
-logger = logging.getLogger(__name__)
+from depotpy.output import error_json, print_error, print_json, print_text, setup_logging
 
 
 def run_install(args: argparse.Namespace) -> int:
     """Execute the install subcommand."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s: %(message)s",
-    )
+    setup_logging()
+    json_output = getattr(args, "json_output", False)
 
     bundle_path = Path(args.bundle_path)
     target = getattr(args, "target", None)
@@ -27,14 +22,18 @@ def run_install(args: argparse.Namespace) -> int:
     try:
         installer = BundleInstaller(bundle_path)
         installer.install(target=target, on_conflict=on_conflict)
-        print(f"Successfully installed packages from: {bundle_path}")
+        if json_output:
+            print_json({
+                "success": True,
+                "bundle_path": str(bundle_path),
+                "on_conflict": on_conflict.value,
+            })
+        else:
+            print_text(f"Successfully installed packages from: {bundle_path}")
         return 0
-    except FileNotFoundError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 1
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 1
-    except RuntimeError as e:
-        print(f"Error: {e}", file=sys.stderr)
+    except (FileNotFoundError, ValueError, RuntimeError) as e:
+        if json_output:
+            error_json(str(e))
+        else:
+            print_error(str(e))
         return 1
