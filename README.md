@@ -17,7 +17,7 @@ PyDepot analyzes your project's dependencies, downloads wheels for multiple plat
 ## Installation
 
 ```bash
-pip install pydepot
+pip install depotpy
 ```
 
 ## Quick Start

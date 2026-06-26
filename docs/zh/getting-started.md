@@ -9,7 +9,7 @@
 ## 安装
 
 ```bash
-pip install pydepot
+pip install depotpy
 ```
 
 验证安装：

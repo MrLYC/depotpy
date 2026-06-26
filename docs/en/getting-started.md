@@ -9,7 +9,7 @@
 ## Installation
 
 ```bash
-pip install pydepot
+pip install depotpy
 ```
 
 Verify the installation:

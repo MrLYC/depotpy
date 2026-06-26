@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pydepot"
+name = "depotpy"
 version = "0.1.0"
 description = "Build cross-platform offline installation packages for Python projects"
 readme = "README.md"
