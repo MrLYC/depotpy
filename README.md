@@ -39,6 +39,17 @@ depotpy inspect myapp-1.0.0-offline.tar.gz
 depotpy install myapp-1.0.0-offline.tar.gz
 ```
 
+## Architecture
+
+![DepotPy architecture](docs/assets/depotpy-architecture.png)
+
+DepotPy is organized as a small standard-library-only CLI pipeline:
+
+- `depotpy.cli` parses `pack`, `inspect`, and `install`, then dispatches to the command modules.
+- `PackBuilder` orchestrates project detection, platform resolution, package download, manifest generation, and tarball creation.
+- The offline bundle contains `manifest.json`, `packages/`, and a generated `README.md`.
+- `inspect` reads `manifest.json` from an existing bundle, while `install` extracts the bundle and runs `pip install --no-index --find-links ./packages`.
+
 ## Documentation
 
 | English | Chinese |

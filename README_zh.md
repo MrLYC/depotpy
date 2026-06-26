@@ -39,6 +39,17 @@ depotpy inspect myapp-1.0.0-offline.tar.gz
 depotpy install myapp-1.0.0-offline.tar.gz
 ```
 
+## 架构概览
+
+![DepotPy 架构图](docs/assets/depotpy-architecture.png)
+
+DepotPy 是一个仅依赖 Python 标准库的小型 CLI 流水线：
+
+- `depotpy.cli` 解析 `pack`、`inspect`、`install`，再分发到各命令模块。
+- `PackBuilder` 负责编排项目检测、平台解析、依赖下载、清单生成和 tarball 创建。
+- 离线包包含 `manifest.json`、`packages/` 和生成的 `README.md`。
+- `inspect` 从已有离线包读取 `manifest.json`，`install` 解压离线包并执行 `pip install --no-index --find-links ./packages`。
+
 ## 文档
 
 | 中文 | English |
