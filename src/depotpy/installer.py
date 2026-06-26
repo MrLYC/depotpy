@@ -10,9 +10,45 @@ import tempfile
 from pathlib import Path
 
 from depotpy.manifest import manifest_from_dict
-from depotpy.models import Manifest
+from depotpy.models import ConflictPolicy, Manifest
 
 logger = logging.getLogger(__name__)
+
+
+def _get_installed_packages() -> dict[str, str]:
+    """Get a mapping of installed package names (lowercase) to versions."""
+    result = subprocess.run(
+        ["pip", "list", "--format=json"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return {}
+
+    installed: dict[str, str] = {}
+    for pkg in json.loads(result.stdout):
+        installed[pkg["name"].lower()] = pkg["version"]
+    return installed
+
+
+def _check_conflicts(
+    manifest: Manifest, installed: dict[str, str]
+) -> list[str]:
+    """Check for version conflicts between bundle packages and installed packages.
+
+    Returns a list of conflict description strings (empty if no conflicts).
+    """
+    conflicts: list[str] = []
+    for pkg in manifest.packages:
+        pkg_name = pkg.name.lower().replace("-", "_").replace(".", "_")
+        for inst_name, inst_version in installed.items():
+            norm_inst = inst_name.lower().replace("-", "_").replace(".", "_")
+            if pkg_name == norm_inst and inst_version != pkg.version:
+                conflicts.append(
+                    f"{pkg.name}: installed {inst_version}, bundle has {pkg.version}"
+                )
+                break
+    return conflicts
 
 
 class BundleInstaller:
@@ -21,16 +57,21 @@ class BundleInstaller:
     def __init__(self, bundle_path: Path) -> None:
         self.bundle_path = bundle_path
 
-    def install(self, target: str | None = None) -> None:
+    def install(
+        self,
+        target: str | None = None,
+        on_conflict: ConflictPolicy = ConflictPolicy.KEEP,
+    ) -> None:
         """Extract the bundle and install packages using pip.
 
         Args:
             target: Optional target directory for pip install --target.
+            on_conflict: How to handle conflicts with installed packages.
 
         Raises:
             FileNotFoundError: If bundle doesn't exist.
             ValueError: If bundle has no manifest.
-            RuntimeError: If pip install fails.
+            RuntimeError: If pip install fails or conflicts are found (with error policy).
         """
         if not self.bundle_path.exists():
             raise FileNotFoundError(f"Bundle not found: {self.bundle_path}")
@@ -45,8 +86,20 @@ class BundleInstaller:
             # Find the manifest
             manifest, packages_dir = self._find_manifest_and_packages(extract_dir)
 
+            # Check conflicts if needed
+            if on_conflict == ConflictPolicy.ERROR:
+                installed = _get_installed_packages()
+                conflicts = _check_conflicts(manifest, installed)
+                if conflicts:
+                    details = "\n".join(f"  - {c}" for c in conflicts)
+                    raise RuntimeError(
+                        f"Version conflicts detected:\n{details}\n"
+                        "Use --on-conflict=keep to skip or "
+                        "--on-conflict=overwrite to force reinstall."
+                    )
+
             # Build pip install command
-            cmd = self._build_install_cmd(manifest, packages_dir, target)
+            cmd = self._build_install_cmd(manifest, packages_dir, target, on_conflict)
 
             logger.info("Running: %s", " ".join(cmd))
             result = subprocess.run(cmd, capture_output=True, text=True)
@@ -78,6 +131,7 @@ class BundleInstaller:
         manifest: Manifest,
         packages_dir: Path,
         target: str | None = None,
+        on_conflict: ConflictPolicy = ConflictPolicy.KEEP,
     ) -> list[str]:
         """Build the pip install command."""
         package_names = sorted({p.name for p in manifest.packages})
@@ -87,6 +141,9 @@ class BundleInstaller:
             "--no-index",
             "--find-links", str(packages_dir),
         ]
+
+        if on_conflict == ConflictPolicy.OVERWRITE:
+            cmd.append("--force-reinstall")
 
         if target:
             cmd.extend(["--target", target])

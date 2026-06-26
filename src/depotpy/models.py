@@ -14,6 +14,14 @@ class PackagePreference(Enum):
     SOURCE = "source"
 
 
+class ConflictPolicy(Enum):
+    """Policy for handling conflicts with already-installed packages."""
+
+    KEEP = "keep"
+    OVERWRITE = "overwrite"
+    ERROR = "error"
+
+
 class DependencyManager(Enum):
     """Supported dependency managers."""
 

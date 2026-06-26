@@ -80,6 +80,12 @@ def create_parser() -> argparse.ArgumentParser:
         "--target",
         help="Install packages into the specified directory",
     )
+    install_parser.add_argument(
+        "--on-conflict",
+        choices=["keep", "overwrite", "error"],
+        default="keep",
+        help="How to handle conflicts with installed packages (default: keep)",
+    )
 
     return parser
 

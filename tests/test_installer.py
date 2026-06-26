@@ -8,8 +8,9 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from depotpy.installer import BundleInstaller
+from depotpy.installer import BundleInstaller, _check_conflicts, _get_installed_packages
 from depotpy.commands.install import run_install
+from depotpy.models import ConflictPolicy, Manifest, PackageFile
 
 
 def _create_test_bundle(tmp_path, with_packages=True):
@@ -49,6 +50,64 @@ def _create_test_bundle(tmp_path, with_packages=True):
             tar.addfile(pkg_info, fileobj=io.BytesIO(pkg_data))
 
     return bundle_path
+
+
+class TestGetInstalledPackages:
+    @patch("depotpy.installer.subprocess.run")
+    def test_success(self, mock_run):
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout='[{"name": "requests", "version": "2.31.0"}, {"name": "click", "version": "8.0"}]',
+        )
+        result = _get_installed_packages()
+        assert result == {"requests": "2.31.0", "click": "8.0"}
+
+    @patch("depotpy.installer.subprocess.run")
+    def test_failure_returns_empty(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="error")
+        result = _get_installed_packages()
+        assert result == {}
+
+
+class TestCheckConflicts:
+    def test_no_conflicts(self):
+        manifest = Manifest(
+            project_name="myapp", project_version="1.0.0",
+            python_version="3.11", platforms=[],
+            packages=[PackageFile("requests-2.31.0-py3-none-any.whl", "requests", "2.31.0", "abc", 100)],
+        )
+        installed = {"requests": "2.31.0"}
+        assert _check_conflicts(manifest, installed) == []
+
+    def test_version_conflict(self):
+        manifest = Manifest(
+            project_name="myapp", project_version="1.0.0",
+            python_version="3.11", platforms=[],
+            packages=[PackageFile("requests-2.31.0-py3-none-any.whl", "requests", "2.31.0", "abc", 100)],
+        )
+        installed = {"requests": "2.28.0"}
+        conflicts = _check_conflicts(manifest, installed)
+        assert len(conflicts) == 1
+        assert "2.28.0" in conflicts[0]
+        assert "2.31.0" in conflicts[0]
+
+    def test_not_installed_no_conflict(self):
+        manifest = Manifest(
+            project_name="myapp", project_version="1.0.0",
+            python_version="3.11", platforms=[],
+            packages=[PackageFile("requests-2.31.0-py3-none-any.whl", "requests", "2.31.0", "abc", 100)],
+        )
+        assert _check_conflicts(manifest, {}) == []
+
+    def test_name_normalization(self):
+        manifest = Manifest(
+            project_name="myapp", project_version="1.0.0",
+            python_version="3.11", platforms=[],
+            packages=[PackageFile("my-pkg-1.0-py3-none-any.whl", "my-pkg", "1.0", "abc", 100)],
+        )
+        installed = {"my_pkg": "0.9"}
+        conflicts = _check_conflicts(manifest, installed)
+        assert len(conflicts) == 1
 
 
 class TestBundleInstaller:
@@ -108,6 +167,61 @@ class TestBundleInstaller:
         with pytest.raises(ValueError, match="No manifest.json"):
             installer.install()
 
+    @patch("depotpy.installer.subprocess.run")
+    def test_keep_policy_no_force(self, mock_run, tmp_path):
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        bundle = _create_test_bundle(tmp_path)
+        installer = BundleInstaller(bundle)
+        installer.install(on_conflict=ConflictPolicy.KEEP)
+
+        cmd = mock_run.call_args[0][0]
+        assert "--force-reinstall" not in cmd
+
+    @patch("depotpy.installer.subprocess.run")
+    def test_overwrite_policy_force_reinstall(self, mock_run, tmp_path):
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        bundle = _create_test_bundle(tmp_path)
+        installer = BundleInstaller(bundle)
+        installer.install(on_conflict=ConflictPolicy.OVERWRITE)
+
+        cmd = mock_run.call_args[0][0]
+        assert "--force-reinstall" in cmd
+
+    @patch("depotpy.installer._get_installed_packages")
+    @patch("depotpy.installer.subprocess.run")
+    def test_error_policy_no_conflict(self, mock_run, mock_get_installed, tmp_path):
+        mock_get_installed.return_value = {"requests": "2.31.0"}
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        bundle = _create_test_bundle(tmp_path)
+        installer = BundleInstaller(bundle)
+        installer.install(on_conflict=ConflictPolicy.ERROR)
+
+        # Should proceed to pip install
+        mock_run.assert_called_once()
+
+    @patch("depotpy.installer._get_installed_packages")
+    def test_error_policy_with_conflict(self, mock_get_installed, tmp_path):
+        mock_get_installed.return_value = {"requests": "2.28.0"}
+
+        bundle = _create_test_bundle(tmp_path)
+        installer = BundleInstaller(bundle)
+        with pytest.raises(RuntimeError, match="Version conflicts detected"):
+            installer.install(on_conflict=ConflictPolicy.ERROR)
+
+    @patch("depotpy.installer._get_installed_packages")
+    @patch("depotpy.installer.subprocess.run")
+    def test_error_policy_not_installed(self, mock_run, mock_get_installed, tmp_path):
+        mock_get_installed.return_value = {}
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        bundle = _create_test_bundle(tmp_path)
+        installer = BundleInstaller(bundle)
+        installer.install(on_conflict=ConflictPolicy.ERROR)
+        mock_run.assert_called_once()
+
 
 class TestRunInstall:
     @patch("depotpy.installer.subprocess.run")
@@ -115,7 +229,9 @@ class TestRunInstall:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
         bundle = _create_test_bundle(tmp_path)
-        args = type("Args", (), {"bundle_path": str(bundle), "target": None})()
+        args = type("Args", (), {
+            "bundle_path": str(bundle), "target": None, "on_conflict": "keep",
+        })()
         result = run_install(args)
         assert result == 0
 
@@ -125,13 +241,12 @@ class TestRunInstall:
     def test_nonexistent(self, tmp_path, capsys):
         args = type("Args", (), {
             "bundle_path": str(tmp_path / "nope.tar.gz"),
-            "target": None,
+            "target": None, "on_conflict": "keep",
         })()
         result = run_install(args)
         assert result == 1
 
     def test_bad_bundle(self, tmp_path, capsys):
-        # Bundle with no manifest -> ValueError
         bundle_path = tmp_path / "bad.tar.gz"
         with tarfile.open(bundle_path, "w:gz") as tar:
             data = b"hello"
@@ -141,7 +256,7 @@ class TestRunInstall:
 
         args = type("Args", (), {
             "bundle_path": str(bundle_path),
-            "target": None,
+            "target": None, "on_conflict": "keep",
         })()
         result = run_install(args)
         assert result == 1
@@ -154,7 +269,22 @@ class TestRunInstall:
         bundle = _create_test_bundle(tmp_path)
         args = type("Args", (), {
             "bundle_path": str(bundle),
-            "target": None,
+            "target": None, "on_conflict": "keep",
         })()
         result = run_install(args)
         assert result == 1
+
+    @patch("depotpy.installer._get_installed_packages")
+    def test_error_policy_conflict_via_cli(self, mock_get_installed, tmp_path, capsys):
+        mock_get_installed.return_value = {"requests": "1.0.0"}
+
+        bundle = _create_test_bundle(tmp_path)
+        args = type("Args", (), {
+            "bundle_path": str(bundle),
+            "target": None, "on_conflict": "error",
+        })()
+        result = run_install(args)
+        assert result == 1
+
+        err = capsys.readouterr().err
+        assert "conflicts" in err.lower()

@@ -73,6 +73,21 @@ class TestCreateParser:
         args = parser.parse_args(["install", "/some/bundle.tar.gz", "--target", "/install/dir"])
         assert args.target == "/install/dir"
 
+    def test_install_default_on_conflict(self):
+        parser = create_parser()
+        args = parser.parse_args(["install", "/some/bundle.tar.gz"])
+        assert args.on_conflict == "keep"
+
+    def test_install_on_conflict_overwrite(self):
+        parser = create_parser()
+        args = parser.parse_args(["install", "/some/bundle.tar.gz", "--on-conflict", "overwrite"])
+        assert args.on_conflict == "overwrite"
+
+    def test_install_on_conflict_error(self):
+        parser = create_parser()
+        args = parser.parse_args(["install", "/some/bundle.tar.gz", "--on-conflict", "error"])
+        assert args.on_conflict == "error"
+
 
 class TestMainDispatch:
     @patch("depotpy.commands.pack.run_pack", return_value=0)
