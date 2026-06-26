@@ -1,6 +1,6 @@
 # DepotPy
 
-[中文文档](README_zh.md) | English
+[中文文档](https://github.com/MrLYC/depotpy/blob/main/README_zh.md) | English
 
 Build cross-platform offline installation packages for Python projects.
 
@@ -43,11 +43,11 @@ depotpy install myapp-1.0.0-offline.tar.gz
 
 | English | Chinese |
 |---------|---------|
-| [Getting Started](docs/en/getting-started.md) | [快速上手](docs/zh/getting-started.md) |
-| [CLI Reference](docs/en/cli-reference.md) | [CLI 参考](docs/zh/cli-reference.md) |
-| [Python API Reference](docs/en/api-reference.md) | [Python API 参考](docs/zh/api-reference.md) |
-| [Architecture](docs/en/architecture.md) | [架构设计](docs/zh/architecture.md) |
-| [Contributing](docs/en/contributing.md) | [贡献指南](docs/zh/contributing.md) |
+| [Getting Started](https://github.com/MrLYC/depotpy/blob/main/docs/en/getting-started.md) | [快速上手](https://github.com/MrLYC/depotpy/blob/main/docs/zh/getting-started.md) |
+| [CLI Reference](https://github.com/MrLYC/depotpy/blob/main/docs/en/cli-reference.md) | [CLI 参考](https://github.com/MrLYC/depotpy/blob/main/docs/zh/cli-reference.md) |
+| [Python API Reference](https://github.com/MrLYC/depotpy/blob/main/docs/en/api-reference.md) | [Python API 参考](https://github.com/MrLYC/depotpy/blob/main/docs/zh/api-reference.md) |
+| [Architecture](https://github.com/MrLYC/depotpy/blob/main/docs/en/architecture.md) | [架构设计](https://github.com/MrLYC/depotpy/blob/main/docs/zh/architecture.md) |
+| [Contributing](https://github.com/MrLYC/depotpy/blob/main/docs/en/contributing.md) | [贡献指南](https://github.com/MrLYC/depotpy/blob/main/docs/zh/contributing.md) |
 
 ## License
 

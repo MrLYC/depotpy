@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "depotpy"
-version = "0.1.1"
+version = "0.1.2"
 description = "Build cross-platform offline installation packages for Python projects"
 readme = "README.md"
 license = "MIT"
