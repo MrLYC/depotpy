@@ -1,14 +1,14 @@
-"""CLI entry point for PyDepot."""
+"""CLI entry point for DepotPy."""
 
 import argparse
 import sys
 
-from pydepot import __version__
+from depotpy import __version__
 
 
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="pydepot",
+        prog="depotpy",
         description="Build cross-platform offline installation packages for Python projects.",
     )
     parser.add_argument(
@@ -87,13 +87,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "pack":
-        from pydepot.commands.pack import run_pack
+        from depotpy.commands.pack import run_pack
         return run_pack(args)
     elif args.command == "inspect":
-        from pydepot.commands.inspect import run_inspect
+        from depotpy.commands.inspect import run_inspect
         return run_inspect(args)
     elif args.command == "install":
-        from pydepot.commands.install import run_install
+        from depotpy.commands.install import run_install
         return run_install(args)
 
     return 0

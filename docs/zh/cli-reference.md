@@ -3,17 +3,17 @@
 ## 全局选项
 
 ```bash
-pydepot --version    # 显示版本号
-pydepot --help       # 显示帮助信息
-pydepot -h           # 显示帮助信息（短格式）
+depotpy --version    # 显示版本号
+depotpy --help       # 显示帮助信息
+depotpy -h           # 显示帮助信息（短格式）
 ```
 
-## `pydepot pack`
+## `depotpy pack`
 
 从 Python 项目构建离线安装包。
 
 ```bash
-pydepot pack <project_path> [选项]
+depotpy pack <project_path> [选项]
 ```
 
 ### 参数
@@ -60,19 +60,19 @@ pydepot pack <project_path> [选项]
 
 ```bash
 # 为当前平台打包
-pydepot pack /path/to/project
+depotpy pack /path/to/project
 
 # 为指定平台打包
-pydepot pack . --platform manylinux2014_x86_64 --platform macosx_11_0_arm64
+depotpy pack . --platform manylinux2014_x86_64 --platform macosx_11_0_arm64
 
 # 为所有平台打包，包含 extras
-pydepot pack . --platform all --include-extras dev
+depotpy pack . --platform all --include-extras dev
 
 # 排除测试依赖打包
-pydepot pack . --exclude pytest --exclude coverage
+depotpy pack . --exclude pytest --exclude coverage
 
 # 自定义输出目录和 Python 版本
-pydepot pack . -o ./dist --python-version 3.12
+depotpy pack . -o ./dist --python-version 3.12
 ```
 
 ### 输出
@@ -90,12 +90,12 @@ pydepot pack . -o ./dist --python-version 3.12
 
 ---
 
-## `pydepot inspect`
+## `depotpy inspect`
 
 查看离线包的内容和元数据。
 
 ```bash
-pydepot inspect <bundle_path>
+depotpy inspect <bundle_path>
 ```
 
 ### 参数
@@ -107,7 +107,7 @@ pydepot inspect <bundle_path>
 ### 示例
 
 ```bash
-pydepot inspect myapp-1.0.0-offline.tar.gz
+depotpy inspect myapp-1.0.0-offline.tar.gz
 ```
 
 ### 输出
@@ -128,12 +128,12 @@ Package list:
 
 ---
 
-## `pydepot install`
+## `depotpy install`
 
 从离线包安装到当前 Python 环境。
 
 ```bash
-pydepot install <bundle_path> [选项]
+depotpy install <bundle_path> [选项]
 ```
 
 ### 参数
@@ -152,15 +152,15 @@ pydepot install <bundle_path> [选项]
 
 ```bash
 # 安装到当前环境
-pydepot install myapp-1.0.0-offline.tar.gz
+depotpy install myapp-1.0.0-offline.tar.gz
 
 # 安装到指定目录
-pydepot install myapp-1.0.0-offline.tar.gz --target /opt/myapp/lib
+depotpy install myapp-1.0.0-offline.tar.gz --target /opt/myapp/lib
 ```
 
 ### 手动安装
 
-目标机器上不需要安装 PyDepot，直接解压后用 pip 安装：
+目标机器上不需要安装 DepotPy，直接解压后用 pip 安装：
 
 ```bash
 tar xzf myapp-1.0.0-offline.tar.gz
@@ -181,7 +181,7 @@ pip install --no-index --find-links ./packages <包名列表>
 
 ## 依赖管理器检测
 
-PyDepot 自动检测项目使用的依赖管理工具：
+DepotPy 自动检测项目使用的依赖管理工具：
 
 | 优先级 | 工具 | 检测方式 | 使用的命令 |
 |--------|------|---------|-----------|
@@ -191,4 +191,4 @@ PyDepot 自动检测项目使用的依赖管理工具：
 | 4 | pipenv | `Pipfile` 或 `Pipfile.lock` | 回退到 pip |
 | 5 | pip | `requirements.txt`、`setup.py`、`setup.cfg` | `pip download` |
 
-如果检测到的工具未安装在系统中，PyDepot 会自动回退到 pip 进行下载。
+如果检测到的工具未安装在系统中，DepotPy 会自动回退到 pip 进行下载。

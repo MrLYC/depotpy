@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from pydepot.detector import (
+from depotpy.detector import (
     _detect_manager,
     _extract_from_pipfile_lock,
     _extract_from_pyproject,
@@ -14,7 +14,7 @@ from pydepot.detector import (
     _extract_from_setup_cfg,
     detect_project,
 )
-from pydepot.models import DependencyManager
+from depotpy.models import DependencyManager
 
 
 @pytest.fixture

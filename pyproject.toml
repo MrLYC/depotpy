@@ -24,7 +24,7 @@ classifiers = [
 ]
 
 [project.scripts]
-pydepot = "pydepot.cli:main"
+depotpy = "depotpy.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -33,7 +33,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/pydepot"]
+packages = ["src/depotpy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -8,7 +8,7 @@ import sys
 import tarfile
 from pathlib import Path
 
-from pydepot.manifest import manifest_from_dict
+from depotpy.manifest import manifest_from_dict
 
 
 class BundleInspector:

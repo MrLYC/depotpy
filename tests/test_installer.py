@@ -8,8 +8,8 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from pydepot.installer import BundleInstaller
-from pydepot.commands.install import run_install
+from depotpy.installer import BundleInstaller
+from depotpy.commands.install import run_install
 
 
 def _create_test_bundle(tmp_path, with_packages=True):
@@ -57,7 +57,7 @@ class TestBundleInstaller:
         with pytest.raises(FileNotFoundError):
             installer.install()
 
-    @patch("pydepot.installer.subprocess.run")
+    @patch("depotpy.installer.subprocess.run")
     def test_install_success(self, mock_run, tmp_path):
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
@@ -73,7 +73,7 @@ class TestBundleInstaller:
         assert "--find-links" in cmd
         assert "requests" in cmd
 
-    @patch("pydepot.installer.subprocess.run")
+    @patch("depotpy.installer.subprocess.run")
     def test_install_with_target(self, mock_run, tmp_path):
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
@@ -85,7 +85,7 @@ class TestBundleInstaller:
         assert "--target" in cmd
         assert "/install/dir" in cmd
 
-    @patch("pydepot.installer.subprocess.run")
+    @patch("depotpy.installer.subprocess.run")
     def test_install_failure(self, mock_run, tmp_path):
         mock_run.return_value = MagicMock(
             returncode=1, stdout="", stderr="some error"
@@ -110,7 +110,7 @@ class TestBundleInstaller:
 
 
 class TestRunInstall:
-    @patch("pydepot.installer.subprocess.run")
+    @patch("depotpy.installer.subprocess.run")
     def test_success(self, mock_run, tmp_path, capsys):
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
@@ -146,7 +146,7 @@ class TestRunInstall:
         result = run_install(args)
         assert result == 1
 
-    @patch("pydepot.installer.subprocess.run")
+    @patch("depotpy.installer.subprocess.run")
     def test_pip_failure(self, mock_run, tmp_path, capsys):
         mock_run.return_value = MagicMock(
             returncode=1, stdout="", stderr="pip error"

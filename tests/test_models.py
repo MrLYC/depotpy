@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pydepot.models import (
+from depotpy.models import (
     DependencyManager,
     Manifest,
     PackageFile,
@@ -112,7 +112,7 @@ class TestManifest:
             platforms=[],
         )
         assert m.packages == []
-        assert m.created_by == "pydepot"
+        assert m.created_by == "depotpy"
         assert m.total_size == 0
         assert m.package_count == 0
 

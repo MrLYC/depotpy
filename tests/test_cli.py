@@ -4,20 +4,20 @@ from unittest.mock import patch
 
 import pytest
 
-from pydepot.cli import create_parser, main
+from depotpy.cli import create_parser, main
 
 
 class TestCreateParser:
     def test_parser_creation(self):
         parser = create_parser()
-        assert parser.prog == "pydepot"
+        assert parser.prog == "depotpy"
 
     def test_version_flag(self, capsys):
         with pytest.raises(SystemExit) as exc_info:
             main(["--version"])
         assert exc_info.value.code == 0
         captured = capsys.readouterr()
-        assert "pydepot" in captured.out
+        assert "depotpy" in captured.out
 
     def test_no_command_shows_help(self, capsys):
         result = main([])
@@ -69,25 +69,25 @@ class TestCreateParser:
 
 
 class TestMainDispatch:
-    @patch("pydepot.commands.pack.run_pack", return_value=0)
+    @patch("depotpy.commands.pack.run_pack", return_value=0)
     def test_dispatch_pack(self, mock_run):
         result = main(["pack", "/some/project"])
         assert result == 0
         mock_run.assert_called_once()
 
-    @patch("pydepot.commands.inspect.run_inspect", return_value=0)
+    @patch("depotpy.commands.inspect.run_inspect", return_value=0)
     def test_dispatch_inspect(self, mock_run):
         result = main(["inspect", "/some/bundle.tar.gz"])
         assert result == 0
         mock_run.assert_called_once()
 
-    @patch("pydepot.commands.install.run_install", return_value=0)
+    @patch("depotpy.commands.install.run_install", return_value=0)
     def test_dispatch_install(self, mock_run):
         result = main(["install", "/some/bundle.tar.gz"])
         assert result == 0
         mock_run.assert_called_once()
 
-    @patch("pydepot.commands.pack.run_pack", return_value=1)
+    @patch("depotpy.commands.pack.run_pack", return_value=1)
     def test_dispatch_returns_error_code(self, mock_run):
         result = main(["pack", "/some/project"])
         assert result == 1

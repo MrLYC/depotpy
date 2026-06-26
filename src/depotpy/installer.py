@@ -9,8 +9,8 @@ import tarfile
 import tempfile
 from pathlib import Path
 
-from pydepot.manifest import manifest_from_dict
-from pydepot.models import Manifest
+from depotpy.manifest import manifest_from_dict
+from depotpy.models import Manifest
 
 logger = logging.getLogger(__name__)
 

@@ -5,13 +5,13 @@ from pathlib import Path
 
 import pytest
 
-from pydepot.manifest import (
+from depotpy.manifest import (
     manifest_from_dict,
     manifest_to_dict,
     read_manifest,
     write_manifest,
 )
-from pydepot.models import Manifest, PackageFile
+from depotpy.models import Manifest, PackageFile
 
 
 def _sample_manifest():
@@ -97,7 +97,7 @@ class TestManifestFromDict:
         m = manifest_from_dict(d)
         assert m.platforms == []
         assert m.packages == []
-        assert m.created_by == "pydepot"
+        assert m.created_by == "depotpy"
 
     def test_missing_required_field_raises(self):
         with pytest.raises(KeyError):

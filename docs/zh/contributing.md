@@ -4,22 +4,22 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/MrLYC/pydepot.git
-cd pydepot
+git clone https://github.com/MrLYC/depotpy.git
+cd depotpy
 
 # 以开发模式安装，包含开发依赖
 pip install -e ".[dev]"
 
 # 验证
-pydepot --version
+depotpy --version
 pytest tests/ -v
 ```
 
 ## 项目结构
 
 ```
-pydepot/
-├── src/pydepot/         # 源码（src layout）
+depotpy/
+├── src/depotpy/         # 源码（src layout）
 │   ├── cli.py           # CLI 入口
 │   ├── commands/        # 子命令处理
 │   ├── detector.py      # 依赖管理器检测
@@ -44,7 +44,7 @@ pydepot/
 pytest tests/ -v
 
 # 带覆盖率运行
-pytest tests/ --cov=pydepot --cov-report=term-missing
+pytest tests/ --cov=depotpy --cov-report=term-missing
 
 # 运行特定测试文件
 pytest tests/test_detector.py -v

@@ -7,7 +7,7 @@ import json
 import shutil
 from pathlib import Path
 
-from pydepot.models import DependencyManager, ProjectInfo
+from depotpy.models import DependencyManager, ProjectInfo
 
 try:
     import tomllib

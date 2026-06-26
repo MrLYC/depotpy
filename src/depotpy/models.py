@@ -1,4 +1,4 @@
-"""Data models for PyDepot."""
+"""Data models for DepotPy."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ class Manifest:
     python_version: str
     platforms: list[str]
     packages: list[PackageFile] = field(default_factory=list)
-    created_by: str = "pydepot"
+    created_by: str = "depotpy"
 
     @property
     def total_size(self) -> int:

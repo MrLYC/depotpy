@@ -7,8 +7,8 @@ import logging
 import sys
 from pathlib import Path
 
-from pydepot.models import PackOptions
-from pydepot.packer import PackBuilder
+from depotpy.models import PackOptions
+from depotpy.packer import PackBuilder
 
 logger = logging.getLogger(__name__)
 

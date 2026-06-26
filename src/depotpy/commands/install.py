@@ -7,7 +7,7 @@ import logging
 import sys
 from pathlib import Path
 
-from pydepot.installer import BundleInstaller
+from depotpy.installer import BundleInstaller
 
 logger = logging.getLogger(__name__)
 

@@ -25,7 +25,7 @@ jobs:
         run: pip install -e ".[dev]"
 
       - name: Run tests
-        run: pytest tests/ -v --cov=pydepot --cov-report=term-missing
+        run: pytest tests/ -v --cov=depotpy --cov-report=term-missing
 
       - name: Check coverage threshold
-        run: pytest tests/ --cov=pydepot --cov-fail-under=90 -q
+        run: pytest tests/ --cov=depotpy --cov-fail-under=90 -q

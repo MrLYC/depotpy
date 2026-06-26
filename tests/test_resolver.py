@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from pydepot.models import DependencyManager, ProjectInfo
-from pydepot.platforms import MANYLINUX_X86_64, MACOSX_ARM64, PlatformTag
-from pydepot.resolver import (
+from depotpy.models import DependencyManager, ProjectInfo
+from depotpy.platforms import MANYLINUX_X86_64, MACOSX_ARM64, PlatformTag
+from depotpy.resolver import (
     _build_pip_download_cmd,
     _build_uv_download_cmd,
     _compute_sha256,
@@ -173,35 +173,35 @@ class TestScanDownloadedFiles:
 
 
 class TestRunDownloadCmd:
-    @patch("pydepot.resolver.subprocess.run")
+    @patch("depotpy.resolver.subprocess.run")
     def test_success(self, mock_run, tmp_path):
-        from pydepot.resolver import _run_download_cmd
+        from depotpy.resolver import _run_download_cmd
         mock_run.return_value = MagicMock(returncode=0, stdout="output", stderr="")
         _run_download_cmd(["pip", "download"], tmp_path)
         mock_run.assert_called_once()
 
-    @patch("pydepot.resolver.subprocess.run")
+    @patch("depotpy.resolver.subprocess.run")
     def test_failure(self, mock_run, tmp_path):
-        from pydepot.resolver import _run_download_cmd
+        from depotpy.resolver import _run_download_cmd
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="error msg")
         with pytest.raises(RuntimeError, match="Download command failed"):
             _run_download_cmd(["pip", "download"], tmp_path)
 
-    @patch("pydepot.resolver.subprocess.run")
+    @patch("depotpy.resolver.subprocess.run")
     def test_empty_stdout(self, mock_run, tmp_path):
-        from pydepot.resolver import _run_download_cmd
+        from depotpy.resolver import _run_download_cmd
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
         _run_download_cmd(["pip", "download"], tmp_path)
 
 
 class TestDownloadForPlatform:
     def test_pip_empty_deps(self, tmp_path):
-        from pydepot.resolver import _download_for_platform_pip
+        from depotpy.resolver import _download_for_platform_pip
         # Should return without calling anything
         _download_for_platform_pip([], tmp_path, MANYLINUX_X86_64)
 
     def test_uv_empty_deps(self, tmp_path):
-        from pydepot.resolver import _download_for_platform_uv
+        from depotpy.resolver import _download_for_platform_uv
         _download_for_platform_uv([], tmp_path, MANYLINUX_X86_64)
 
 
@@ -216,7 +216,7 @@ class TestDownloadPackages:
             manager=manager,
         )
 
-    @patch("pydepot.resolver._run_download_cmd")
+    @patch("depotpy.resolver._run_download_cmd")
     def test_pip_backend(self, mock_run, tmp_path):
         project = self._make_project(tmp_path)
         download_dir = tmp_path / "downloads"
@@ -231,7 +231,7 @@ class TestDownloadPackages:
         assert mock_run.called
         assert len(result) == 1
 
-    @patch("pydepot.resolver._run_download_cmd")
+    @patch("depotpy.resolver._run_download_cmd")
     def test_uv_backend(self, mock_run, tmp_path):
         project = self._make_project(tmp_path, DependencyManager.UV)
         download_dir = tmp_path / "downloads"
@@ -243,7 +243,7 @@ class TestDownloadPackages:
         cmd = mock_run.call_args[0][0]
         assert cmd[0] == "uv"
 
-    @patch("pydepot.resolver._run_download_cmd")
+    @patch("depotpy.resolver._run_download_cmd")
     def test_multiple_platforms(self, mock_run, tmp_path):
         project = self._make_project(tmp_path)
         download_dir = tmp_path / "downloads"
@@ -254,7 +254,7 @@ class TestDownloadPackages:
         )
         assert mock_run.call_count == 2
 
-    @patch("pydepot.resolver._run_download_cmd")
+    @patch("depotpy.resolver._run_download_cmd")
     def test_include_extras(self, mock_run, tmp_path):
         project = self._make_project(tmp_path)
         download_dir = tmp_path / "downloads"
@@ -267,7 +267,7 @@ class TestDownloadPackages:
         cmd = mock_run.call_args[0][0]
         assert "pytest" in cmd
 
-    @patch("pydepot.resolver._run_download_cmd")
+    @patch("depotpy.resolver._run_download_cmd")
     def test_no_dependencies(self, mock_run, tmp_path):
         project = ProjectInfo(
             path=tmp_path, name="empty", version="1.0.0",
@@ -280,7 +280,7 @@ class TestDownloadPackages:
         assert result == []
         mock_run.assert_not_called()
 
-    @patch("pydepot.resolver._run_download_cmd")
+    @patch("depotpy.resolver._run_download_cmd")
     def test_fallback_on_failure(self, mock_run, tmp_path):
         project = self._make_project(tmp_path, DependencyManager.UV)
         download_dir = tmp_path / "downloads"
@@ -295,7 +295,7 @@ class TestDownloadPackages:
         second_cmd = mock_run.call_args_list[1][0][0]
         assert second_cmd[0] == "pip"
 
-    @patch("pydepot.resolver._run_download_cmd")
+    @patch("depotpy.resolver._run_download_cmd")
     def test_pip_failure_raises(self, mock_run, tmp_path):
         project = self._make_project(tmp_path)
         download_dir = tmp_path / "downloads"
@@ -306,7 +306,7 @@ class TestDownloadPackages:
         with pytest.raises(RuntimeError, match="pip failed"):
             download_packages(project, download_dir, [MANYLINUX_X86_64])
 
-    @patch("pydepot.resolver._run_download_cmd")
+    @patch("depotpy.resolver._run_download_cmd")
     def test_creates_download_dir(self, mock_run, tmp_path):
         project = self._make_project(tmp_path)
         download_dir = tmp_path / "new" / "dir"

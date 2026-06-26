@@ -1,10 +1,10 @@
-# PyDepot
+# DepotPy
 
 中文 | [English](README.md)
 
 为 Python 项目构建可跨平台分发的离线安装包。
 
-PyDepot 分析项目依赖，为多个平台下载 wheels，将所有内容打包为 `.tar.gz` 归档文件，其中包含清单文件和安装说明。生成的离线包可以传输到无网络环境中，通过一条 `pip` 命令即可完成安装。
+DepotPy 分析项目依赖，为多个平台下载 wheels，将所有内容打包为 `.tar.gz` 归档文件，其中包含清单文件和安装说明。生成的离线包可以传输到无网络环境中，通过一条 `pip` 命令即可完成安装。
 
 ## 特性
 
@@ -24,19 +24,19 @@ pip install depotpy
 
 ```bash
 # 为当前平台构建离线包
-pydepot pack /path/to/your/project
+depotpy pack /path/to/your/project
 
 # 为多个平台构建
-pydepot pack /path/to/project --platform manylinux2014_x86_64 --platform macosx_11_0_arm64
+depotpy pack /path/to/project --platform manylinux2014_x86_64 --platform macosx_11_0_arm64
 
 # 为所有支持的平台构建
-pydepot pack /path/to/project --platform all
+depotpy pack /path/to/project --platform all
 
 # 查看离线包内容
-pydepot inspect myapp-1.0.0-offline.tar.gz
+depotpy inspect myapp-1.0.0-offline.tar.gz
 
 # 从离线包安装（在目标机器上执行）
-pydepot install myapp-1.0.0-offline.tar.gz
+depotpy install myapp-1.0.0-offline.tar.gz
 ```
 
 ## 文档

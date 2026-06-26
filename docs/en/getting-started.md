@@ -4,7 +4,7 @@
 
 - Python 3.11 or later
 - pip (bundled with Python)
-- Optional: [uv](https://github.com/astral-sh/uv), [poetry](https://python-poetry.org/), [pdm](https://pdm-project.org/), or [pipenv](https://pipenv.pypa.io/) — PyDepot will use them if your project does
+- Optional: [uv](https://github.com/astral-sh/uv), [poetry](https://python-poetry.org/), [pdm](https://pdm-project.org/), or [pipenv](https://pipenv.pypa.io/) — DepotPy will use them if your project does
 
 ## Installation
 
@@ -15,7 +15,7 @@ pip install depotpy
 Verify the installation:
 
 ```bash
-pydepot --version
+depotpy --version
 ```
 
 ## Your First Offline Bundle
@@ -25,7 +25,7 @@ pydepot --version
 Navigate to any Python project that has a `pyproject.toml`, `setup.cfg`, or `requirements.txt`, then run:
 
 ```bash
-pydepot pack .
+depotpy pack .
 ```
 
 This will:
@@ -49,8 +49,8 @@ scp myapp-1.0.0-offline.tar.gz user@target-host:/tmp/
 On the target machine (no internet required):
 
 ```bash
-# Using PyDepot (if installed)
-pydepot install myapp-1.0.0-offline.tar.gz
+# Using DepotPy (if installed)
+depotpy install myapp-1.0.0-offline.tar.gz
 
 # Or manually
 tar xzf myapp-1.0.0-offline.tar.gz
@@ -66,12 +66,12 @@ To build a bundle that works on multiple platforms:
 
 ```bash
 # Specify individual platforms
-pydepot pack . --platform manylinux2014_x86_64 --platform macosx_11_0_arm64
+depotpy pack . --platform manylinux2014_x86_64 --platform macosx_11_0_arm64
 
 # Use a preset
-pydepot pack . --platform linux    # All Linux variants
-pydepot pack . --platform macos    # macOS x86_64 + ARM
-pydepot pack . --platform all      # All 8 platforms
+depotpy pack . --platform linux    # All Linux variants
+depotpy pack . --platform macos    # macOS x86_64 + ARM
+depotpy pack . --platform all      # All 8 platforms
 ```
 
 Cross-platform bundles are larger because they include platform-specific wheels for each target. Pure-Python wheels (e.g. `requests`) are included only once.
@@ -81,7 +81,7 @@ Cross-platform bundles are larger because they include platform-specific wheels 
 Before transferring, you can verify what's inside:
 
 ```bash
-pydepot inspect myapp-1.0.0-offline.tar.gz
+depotpy inspect myapp-1.0.0-offline.tar.gz
 ```
 
 Output:
@@ -105,20 +105,20 @@ Package list:
 
 ```bash
 # Override Python version
-pydepot pack . --python-version 3.12
+depotpy pack . --python-version 3.12
 
 # Exclude specific dependencies
-pydepot pack . --exclude pytest --exclude mypy
+depotpy pack . --exclude pytest --exclude mypy
 
 # Include optional extras
-pydepot pack . --include-extras dev --include-extras docs
+depotpy pack . --include-extras dev --include-extras docs
 
 # Specify output directory
-pydepot pack . -o /path/to/output/
+depotpy pack . -o /path/to/output/
 ```
 
 ## Next Steps
 
 - [CLI Reference](cli-reference.md) — Full command-line documentation
-- [Python API Reference](api-reference.md) — Use PyDepot as a library
-- [Architecture](architecture.md) — How PyDepot works internally
+- [Python API Reference](api-reference.md) — Use DepotPy as a library
+- [Architecture](architecture.md) — How DepotPy works internally

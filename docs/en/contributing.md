@@ -4,22 +4,22 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/MrLYC/pydepot.git
-cd pydepot
+git clone https://github.com/MrLYC/depotpy.git
+cd depotpy
 
 # Install in development mode with dev dependencies
 pip install -e ".[dev]"
 
 # Verify
-pydepot --version
+depotpy --version
 pytest tests/ -v
 ```
 
 ## Project Structure
 
 ```
-pydepot/
-├── src/pydepot/         # Source code (src layout)
+depotpy/
+├── src/depotpy/         # Source code (src layout)
 │   ├── cli.py           # CLI entry point
 │   ├── commands/        # Subcommand handlers
 │   ├── detector.py      # Dependency manager detection
@@ -44,7 +44,7 @@ pydepot/
 pytest tests/ -v
 
 # Run with coverage
-pytest tests/ --cov=pydepot --cov-report=term-missing
+pytest tests/ --cov=depotpy --cov-report=term-missing
 
 # Run a specific test file
 pytest tests/test_detector.py -v

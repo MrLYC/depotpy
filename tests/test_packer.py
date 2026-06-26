@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pydepot.models import Manifest, PackageFile, PackOptions
-from pydepot.packer import PackBuilder, _create_bundle_tarball, _generate_readme
+from depotpy.models import Manifest, PackageFile, PackOptions
+from depotpy.packer import PackBuilder, _create_bundle_tarball, _generate_readme
 
 
 def _sample_manifest():
@@ -195,10 +195,10 @@ class TestCreateBundleTarball:
 
 
 class TestPackBuilder:
-    @patch("pydepot.packer.download_packages")
-    @patch("pydepot.packer.detect_project")
+    @patch("depotpy.packer.download_packages")
+    @patch("depotpy.packer.detect_project")
     def test_build(self, mock_detect, mock_download, tmp_path):
-        from pydepot.models import DependencyManager, ProjectInfo
+        from depotpy.models import DependencyManager, ProjectInfo
 
         mock_detect.return_value = ProjectInfo(
             path=tmp_path,
@@ -231,10 +231,10 @@ class TestPackBuilder:
         assert result.exists()
         assert result.name == "myapp-1.0.0-offline.tar.gz"
 
-    @patch("pydepot.packer.download_packages")
-    @patch("pydepot.packer.detect_project")
+    @patch("depotpy.packer.download_packages")
+    @patch("depotpy.packer.detect_project")
     def test_build_with_platforms(self, mock_detect, mock_download, tmp_path):
-        from pydepot.models import DependencyManager, ProjectInfo
+        from depotpy.models import DependencyManager, ProjectInfo
 
         mock_detect.return_value = ProjectInfo(
             path=tmp_path,

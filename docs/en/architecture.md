@@ -2,7 +2,7 @@
 
 ## Overview
 
-PyDepot is structured as a pipeline that transforms a Python project into a self-contained offline installation bundle:
+DepotPy is structured as a pipeline that transforms a Python project into a self-contained offline installation bundle:
 
 ```
 Project Directory → Detect → Resolve → Download → Manifest → Pack → .tar.gz
@@ -11,7 +11,7 @@ Project Directory → Detect → Resolve → Download → Manifest → Pack → 
 ## Module Map
 
 ```
-src/pydepot/
+src/depotpy/
 ├── __init__.py        # Public API exports
 ├── cli.py             # argparse entry point, subcommand dispatch
 ├── commands/
@@ -72,7 +72,7 @@ src/pydepot/
 
 ### No Runtime Dependencies
 
-PyDepot uses only the Python standard library. External tools (uv, poetry, pdm, pip) are invoked via `subprocess` and are detected at runtime, not declared as package dependencies. This makes PyDepot easy to install in constrained environments.
+DepotPy uses only the Python standard library. External tools (uv, poetry, pdm, pip) are invoked via `subprocess` and are detected at runtime, not declared as package dependencies. This makes DepotPy easy to install in constrained environments.
 
 ### Dependency Manager Detection
 
@@ -81,17 +81,17 @@ Detection follows a strict priority order (uv > poetry > pdm > pipenv > pip). Ea
 1. **Lock file presence** — `uv.lock`, `poetry.lock`, etc.
 2. **Tool section in pyproject.toml** — `[tool.uv]`, `[tool.poetry]`, etc.
 
-If a manager is detected but its CLI is not installed (`shutil.which` returns None), PyDepot falls back to the next option, ultimately reaching pip.
+If a manager is detected but its CLI is not installed (`shutil.which` returns None), DepotPy falls back to the next option, ultimately reaching pip.
 
 ### Platform Tags
 
-Platform tags follow the [PEP 425](https://peps.python.org/pep-0425/) wheel compatibility tag scheme. PyDepot defines 8 common platform tags grouped into presets (`all`, `linux`, `macos`, `windows`).
+Platform tags follow the [PEP 425](https://peps.python.org/pep-0425/) wheel compatibility tag scheme. DepotPy defines 8 common platform tags grouped into presets (`all`, `linux`, `macos`, `windows`).
 
 When `--platform` is not specified, only the current platform is used. This is deliberate — cross-platform bundles are significantly larger and most users only need their own platform.
 
 ### Download Strategy
 
-For each platform, PyDepot runs a separate `pip download` (or `uv pip download`) command with `--platform` and `--only-binary=:all:`. This ensures platform-specific binary wheels are fetched correctly.
+For each platform, DepotPy runs a separate `pip download` (or `uv pip download`) command with `--platform` and `--only-binary=:all:`. This ensures platform-specific binary wheels are fetched correctly.
 
 Files are downloaded into a single flat directory. Duplicate filenames (e.g. the same pure-Python wheel downloaded for multiple platforms) are naturally deduplicated by the filesystem.
 

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from pydepot.commands.inspect import BundleInspector, run_inspect
+from depotpy.commands.inspect import BundleInspector, run_inspect
 
 
 def _create_test_bundle(tmp_path, manifest_data=None):
@@ -18,7 +18,7 @@ def _create_test_bundle(tmp_path, manifest_data=None):
             "project_version": "1.0.0",
             "python_version": "3.11",
             "platforms": ["manylinux2014_x86_64"],
-            "created_by": "pydepot",
+            "created_by": "depotpy",
             "package_count": 2,
             "total_size": 1536,
             "packages": [

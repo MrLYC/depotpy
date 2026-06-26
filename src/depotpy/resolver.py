@@ -8,8 +8,8 @@ import os
 import subprocess
 from pathlib import Path
 
-from pydepot.models import DependencyManager, PackageFile, ProjectInfo
-from pydepot.platforms import PlatformTag
+from depotpy.models import DependencyManager, PackageFile, ProjectInfo
+from depotpy.platforms import PlatformTag
 
 logger = logging.getLogger(__name__)
 

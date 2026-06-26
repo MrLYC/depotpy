@@ -1,9 +1,9 @@
 # Python API Reference
 
-PyDepot exposes three main classes for programmatic use:
+DepotPy exposes three main classes for programmatic use:
 
 ```python
-from pydepot import PackBuilder, BundleInspector, BundleInstaller
+from depotpy import PackBuilder, BundleInspector, BundleInstaller
 ```
 
 ## PackBuilder
@@ -13,8 +13,8 @@ Builds an offline installation bundle from a Python project.
 ### Constructor
 
 ```python
-from pydepot.packer import PackBuilder
-from pydepot.models import PackOptions
+from depotpy.packer import PackBuilder
+from depotpy.models import PackOptions
 from pathlib import Path
 
 options = PackOptions(
@@ -55,7 +55,7 @@ Inspect the contents of an offline bundle.
 ### Constructor
 
 ```python
-from pydepot.commands.inspect import BundleInspector
+from depotpy.commands.inspect import BundleInspector
 from pathlib import Path
 
 inspector = BundleInspector(Path("myapp-1.0.0-offline.tar.gz"))
@@ -96,7 +96,7 @@ Install packages from an offline bundle.
 ### Constructor
 
 ```python
-from pydepot.installer import BundleInstaller
+from depotpy.installer import BundleInstaller
 from pathlib import Path
 
 installer = BundleInstaller(Path("myapp-1.0.0-offline.tar.gz"))
@@ -133,7 +133,7 @@ installer.install(target="/opt/myapp/lib")
 Options for the pack command.
 
 ```python
-from pydepot.models import PackOptions
+from depotpy.models import PackOptions
 from pathlib import Path
 
 options = PackOptions(
@@ -151,7 +151,7 @@ options = PackOptions(
 Detected project metadata. Returned by `detect_project()`.
 
 ```python
-from pydepot.detector import detect_project
+from depotpy.detector import detect_project
 from pathlib import Path
 
 info = detect_project(Path("/path/to/project"))
@@ -168,7 +168,7 @@ print(info.python_requires)   # ">=3.11"
 Represents a downloaded package file.
 
 ```python
-from pydepot.models import PackageFile
+from depotpy.models import PackageFile
 
 pkg = PackageFile(
     filename="requests-2.31.0-py3-none-any.whl",
@@ -188,7 +188,7 @@ pkg.is_sdist    # False
 The manifest.json content.
 
 ```python
-from pydepot.models import Manifest
+from depotpy.models import Manifest
 
 manifest = Manifest(
     project_name="myapp",
@@ -207,7 +207,7 @@ manifest.total_size       # total size in bytes
 Enum of supported dependency managers.
 
 ```python
-from pydepot.models import DependencyManager
+from depotpy.models import DependencyManager
 
 DependencyManager.UV        # "uv"
 DependencyManager.POETRY    # "poetry"
@@ -223,7 +223,7 @@ DependencyManager.PIP       # "pip"
 ### Platform Resolution
 
 ```python
-from pydepot.platforms import resolve_platforms, get_current_platform
+from depotpy.platforms import resolve_platforms, get_current_platform
 
 # Get current platform
 current = get_current_platform()
@@ -237,7 +237,7 @@ platforms = resolve_platforms(["linux", "macosx_11_0_arm64"])
 ### Manifest I/O
 
 ```python
-from pydepot.manifest import write_manifest, read_manifest
+from depotpy.manifest import write_manifest, read_manifest
 
 # Write
 write_manifest(manifest, Path("manifest.json"))
@@ -249,7 +249,7 @@ manifest = read_manifest(Path("manifest.json"))
 ### Dependency Detection
 
 ```python
-from pydepot.detector import detect_project
+from depotpy.detector import detect_project
 from pathlib import Path
 
 info = detect_project(Path("/path/to/project"))

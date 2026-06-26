@@ -1,9 +1,9 @@
 # Python API 参考
 
-PyDepot 提供三个主要类用于编程调用：
+DepotPy 提供三个主要类用于编程调用：
 
 ```python
-from pydepot import PackBuilder, BundleInspector, BundleInstaller
+from depotpy import PackBuilder, BundleInspector, BundleInstaller
 ```
 
 ## PackBuilder
@@ -13,8 +13,8 @@ from pydepot import PackBuilder, BundleInspector, BundleInstaller
 ### 构造函数
 
 ```python
-from pydepot.packer import PackBuilder
-from pydepot.models import PackOptions
+from depotpy.packer import PackBuilder
+from depotpy.models import PackOptions
 from pathlib import Path
 
 options = PackOptions(
@@ -55,7 +55,7 @@ print(f"离线包已创建: {bundle_path}")
 ### 构造函数
 
 ```python
-from pydepot.commands.inspect import BundleInspector
+from depotpy.commands.inspect import BundleInspector
 from pathlib import Path
 
 inspector = BundleInspector(Path("myapp-1.0.0-offline.tar.gz"))
@@ -96,7 +96,7 @@ inspector.print_summary()
 ### 构造函数
 
 ```python
-from pydepot.installer import BundleInstaller
+from depotpy.installer import BundleInstaller
 from pathlib import Path
 
 installer = BundleInstaller(Path("myapp-1.0.0-offline.tar.gz"))
@@ -133,7 +133,7 @@ installer.install(target="/opt/myapp/lib")
 打包命令的选项。
 
 ```python
-from pydepot.models import PackOptions
+from depotpy.models import PackOptions
 from pathlib import Path
 
 options = PackOptions(
@@ -151,7 +151,7 @@ options = PackOptions(
 检测到的项目元数据，由 `detect_project()` 返回。
 
 ```python
-from pydepot.detector import detect_project
+from depotpy.detector import detect_project
 from pathlib import Path
 
 info = detect_project(Path("/path/to/project"))
@@ -168,7 +168,7 @@ print(info.python_requires)   # ">=3.11"
 表示一个已下载的包文件。
 
 ```python
-from pydepot.models import PackageFile
+from depotpy.models import PackageFile
 
 pkg = PackageFile(
     filename="requests-2.31.0-py3-none-any.whl",
@@ -188,7 +188,7 @@ pkg.is_sdist    # False
 manifest.json 的内容。
 
 ```python
-from pydepot.models import Manifest
+from depotpy.models import Manifest
 
 manifest = Manifest(
     project_name="myapp",
@@ -207,7 +207,7 @@ manifest.total_size       # 总大小（字节）
 支持的依赖管理器枚举。
 
 ```python
-from pydepot.models import DependencyManager
+from depotpy.models import DependencyManager
 
 DependencyManager.UV        # "uv"
 DependencyManager.POETRY    # "poetry"
@@ -223,7 +223,7 @@ DependencyManager.PIP       # "pip"
 ### 平台解析
 
 ```python
-from pydepot.platforms import resolve_platforms, get_current_platform
+from depotpy.platforms import resolve_platforms, get_current_platform
 
 # 获取当前平台
 current = get_current_platform()
@@ -237,7 +237,7 @@ platforms = resolve_platforms(["linux", "macosx_11_0_arm64"])
 ### 清单 I/O
 
 ```python
-from pydepot.manifest import write_manifest, read_manifest
+from depotpy.manifest import write_manifest, read_manifest
 
 # 写入
 write_manifest(manifest, Path("manifest.json"))
@@ -249,7 +249,7 @@ manifest = read_manifest(Path("manifest.json"))
 ### 依赖检测
 
 ```python
-from pydepot.detector import detect_project
+from depotpy.detector import detect_project
 from pathlib import Path
 
 info = detect_project(Path("/path/to/project"))

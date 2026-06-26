@@ -6,7 +6,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from pydepot.models import Manifest, PackageFile
+from depotpy.models import Manifest, PackageFile
 
 
 def manifest_to_dict(manifest: Manifest) -> dict:
@@ -53,7 +53,7 @@ def manifest_from_dict(data: dict) -> Manifest:
         python_version=data["python_version"],
         platforms=data.get("platforms", []),
         packages=packages,
-        created_by=data.get("created_by", "pydepot"),
+        created_by=data.get("created_by", "depotpy"),
     )
 
 

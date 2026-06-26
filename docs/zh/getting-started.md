@@ -4,7 +4,7 @@
 
 - Python 3.11 或更高版本
 - pip（Python 自带）
-- 可选：[uv](https://github.com/astral-sh/uv)、[poetry](https://python-poetry.org/)、[pdm](https://pdm-project.org/) 或 [pipenv](https://pipenv.pypa.io/) — 如果你的项目使用了这些工具，PyDepot 会自动识别并使用
+- 可选：[uv](https://github.com/astral-sh/uv)、[poetry](https://python-poetry.org/)、[pdm](https://pdm-project.org/) 或 [pipenv](https://pipenv.pypa.io/) — 如果你的项目使用了这些工具，DepotPy 会自动识别并使用
 
 ## 安装
 
@@ -15,7 +15,7 @@ pip install depotpy
 验证安装：
 
 ```bash
-pydepot --version
+depotpy --version
 ```
 
 ## 创建你的第一个离线包
@@ -25,7 +25,7 @@ pydepot --version
 进入任何包含 `pyproject.toml`、`setup.cfg` 或 `requirements.txt` 的 Python 项目目录，然后运行：
 
 ```bash
-pydepot pack .
+depotpy pack .
 ```
 
 这个命令会：
@@ -49,8 +49,8 @@ scp myapp-1.0.0-offline.tar.gz user@target-host:/tmp/
 在目标机器上（无需网络连接）：
 
 ```bash
-# 使用 PyDepot（如果已安装）
-pydepot install myapp-1.0.0-offline.tar.gz
+# 使用 DepotPy（如果已安装）
+depotpy install myapp-1.0.0-offline.tar.gz
 
 # 或者手动安装
 tar xzf myapp-1.0.0-offline.tar.gz
@@ -66,12 +66,12 @@ pip install --no-index --find-links ./packages <包名列表>
 
 ```bash
 # 指定具体平台
-pydepot pack . --platform manylinux2014_x86_64 --platform macosx_11_0_arm64
+depotpy pack . --platform manylinux2014_x86_64 --platform macosx_11_0_arm64
 
 # 使用预设
-pydepot pack . --platform linux    # 所有 Linux 变体
-pydepot pack . --platform macos    # macOS x86_64 + ARM
-pydepot pack . --platform all      # 全部 8 个平台
+depotpy pack . --platform linux    # 所有 Linux 变体
+depotpy pack . --platform macos    # macOS x86_64 + ARM
+depotpy pack . --platform all      # 全部 8 个平台
 ```
 
 跨平台离线包体积较大，因为包含了每个目标平台的专用 wheels。纯 Python wheels（如 `requests`）只会包含一份。
@@ -81,7 +81,7 @@ pydepot pack . --platform all      # 全部 8 个平台
 传输之前，可以先确认离线包的内容：
 
 ```bash
-pydepot inspect myapp-1.0.0-offline.tar.gz
+depotpy inspect myapp-1.0.0-offline.tar.gz
 ```
 
 输出示例：
@@ -105,20 +105,20 @@ Package list:
 
 ```bash
 # 覆盖 Python 版本
-pydepot pack . --python-version 3.12
+depotpy pack . --python-version 3.12
 
 # 排除特定依赖
-pydepot pack . --exclude pytest --exclude mypy
+depotpy pack . --exclude pytest --exclude mypy
 
 # 包含可选 extras
-pydepot pack . --include-extras dev --include-extras docs
+depotpy pack . --include-extras dev --include-extras docs
 
 # 指定输出目录
-pydepot pack . -o /path/to/output/
+depotpy pack . -o /path/to/output/
 ```
 
 ## 下一步
 
 - [CLI 参考](cli-reference.md) — 完整的命令行文档
-- [Python API 参考](api-reference.md) — 将 PyDepot 作为库使用
-- [架构设计](architecture.md) — PyDepot 的内部工作原理
+- [Python API 参考](api-reference.md) — 将 DepotPy 作为库使用
+- [架构设计](architecture.md) — DepotPy 的内部工作原理

@@ -1,10 +1,10 @@
-# PyDepot
+# DepotPy
 
 [中文文档](README_zh.md) | English
 
 Build cross-platform offline installation packages for Python projects.
 
-PyDepot analyzes your project's dependencies, downloads wheels for multiple platforms, and bundles everything into a `.tar.gz` archive with a manifest and installation instructions. The resulting bundle can be transferred to offline environments and installed with a single `pip` command.
+DepotPy analyzes your project's dependencies, downloads wheels for multiple platforms, and bundles everything into a `.tar.gz` archive with a manifest and installation instructions. The resulting bundle can be transferred to offline environments and installed with a single `pip` command.
 
 ## Features
 
@@ -24,19 +24,19 @@ pip install depotpy
 
 ```bash
 # Build an offline bundle for the current platform
-pydepot pack /path/to/your/project
+depotpy pack /path/to/your/project
 
 # Build for multiple platforms
-pydepot pack /path/to/project --platform manylinux2014_x86_64 --platform macosx_11_0_arm64
+depotpy pack /path/to/project --platform manylinux2014_x86_64 --platform macosx_11_0_arm64
 
 # Build for all supported platforms
-pydepot pack /path/to/project --platform all
+depotpy pack /path/to/project --platform all
 
 # Inspect a bundle
-pydepot inspect myapp-1.0.0-offline.tar.gz
+depotpy inspect myapp-1.0.0-offline.tar.gz
 
 # Install from a bundle (on the target machine)
-pydepot install myapp-1.0.0-offline.tar.gz
+depotpy install myapp-1.0.0-offline.tar.gz
 ```
 
 ## Documentation

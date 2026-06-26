@@ -3,17 +3,17 @@
 ## Global Options
 
 ```bash
-pydepot --version    # Show version
-pydepot --help       # Show help
-pydepot -h           # Show help (short form)
+depotpy --version    # Show version
+depotpy --help       # Show help
+depotpy -h           # Show help (short form)
 ```
 
-## `pydepot pack`
+## `depotpy pack`
 
 Build an offline installation package from a Python project.
 
 ```bash
-pydepot pack <project_path> [options]
+depotpy pack <project_path> [options]
 ```
 
 ### Arguments
@@ -60,19 +60,19 @@ Presets:
 
 ```bash
 # Pack for current platform
-pydepot pack /path/to/project
+depotpy pack /path/to/project
 
 # Pack for specific platforms
-pydepot pack . --platform manylinux2014_x86_64 --platform macosx_11_0_arm64
+depotpy pack . --platform manylinux2014_x86_64 --platform macosx_11_0_arm64
 
 # Pack for all platforms with extras
-pydepot pack . --platform all --include-extras dev
+depotpy pack . --platform all --include-extras dev
 
 # Pack excluding test dependencies
-pydepot pack . --exclude pytest --exclude coverage
+depotpy pack . --exclude pytest --exclude coverage
 
 # Pack with custom output and Python version
-pydepot pack . -o ./dist --python-version 3.12
+depotpy pack . -o ./dist --python-version 3.12
 ```
 
 ### Output
@@ -90,12 +90,12 @@ The bundle contains:
 
 ---
 
-## `pydepot inspect`
+## `depotpy inspect`
 
 Display the contents and metadata of an offline bundle.
 
 ```bash
-pydepot inspect <bundle_path>
+depotpy inspect <bundle_path>
 ```
 
 ### Arguments
@@ -107,7 +107,7 @@ pydepot inspect <bundle_path>
 ### Examples
 
 ```bash
-pydepot inspect myapp-1.0.0-offline.tar.gz
+depotpy inspect myapp-1.0.0-offline.tar.gz
 ```
 
 ### Output
@@ -128,12 +128,12 @@ Package list:
 
 ---
 
-## `pydepot install`
+## `depotpy install`
 
 Install packages from an offline bundle into the current Python environment.
 
 ```bash
-pydepot install <bundle_path> [options]
+depotpy install <bundle_path> [options]
 ```
 
 ### Arguments
@@ -152,15 +152,15 @@ pydepot install <bundle_path> [options]
 
 ```bash
 # Install into current environment
-pydepot install myapp-1.0.0-offline.tar.gz
+depotpy install myapp-1.0.0-offline.tar.gz
 
 # Install into a specific directory
-pydepot install myapp-1.0.0-offline.tar.gz --target /opt/myapp/lib
+depotpy install myapp-1.0.0-offline.tar.gz --target /opt/myapp/lib
 ```
 
 ### Manual Installation
 
-You don't need PyDepot installed on the target machine. Extract and use pip directly:
+You don't need DepotPy installed on the target machine. Extract and use pip directly:
 
 ```bash
 tar xzf myapp-1.0.0-offline.tar.gz
@@ -181,7 +181,7 @@ The exact command with all package names is in the bundle's `README.md`.
 
 ## Dependency Manager Detection
 
-PyDepot automatically detects which dependency manager your project uses:
+DepotPy automatically detects which dependency manager your project uses:
 
 | Priority | Manager | Detected By | Command Used |
 |----------|---------|-------------|--------------|
@@ -191,4 +191,4 @@ PyDepot automatically detects which dependency manager your project uses:
 | 4 | pipenv | `Pipfile` or `Pipfile.lock` | Falls back to pip |
 | 5 | pip | `requirements.txt`, `setup.py`, `setup.cfg` | `pip download` |
 
-If the detected tool is not installed on the system, PyDepot automatically falls back to pip for downloading.
+If the detected tool is not installed on the system, DepotPy automatically falls back to pip for downloading.
