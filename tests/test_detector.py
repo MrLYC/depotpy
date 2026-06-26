@@ -143,6 +143,12 @@ class TestExtractFromSetupCfg:
         (tmp_project / "setup.cfg").write_text("[options]\n")
         assert _extract_from_setup_cfg(tmp_project) is None
 
+    def test_no_name_returns_none(self, tmp_project):
+        (tmp_project / "setup.cfg").write_text(
+            "[metadata]\nversion = 1.0.0\n"
+        )
+        assert _extract_from_setup_cfg(tmp_project) is None
+
     def test_no_file(self, tmp_project):
         assert _extract_from_setup_cfg(tmp_project) is None
 
@@ -174,6 +180,17 @@ class TestExtractFromPipfileLock:
         assert info is not None
         assert "requests==2.31.0" in info.dependencies
         assert "click==8.0.0" in info.dependencies
+
+    def test_package_without_version(self, tmp_project):
+        lock_data = {
+            "default": {
+                "somepkg": {},
+            }
+        }
+        (tmp_project / "Pipfile.lock").write_text(json.dumps(lock_data))
+        info = _extract_from_pipfile_lock(tmp_project)
+        assert info is not None
+        assert "somepkg" in info.dependencies
 
     def test_no_file(self, tmp_project):
         assert _extract_from_pipfile_lock(tmp_project) is None

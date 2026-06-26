@@ -129,3 +129,32 @@ class TestRunInstall:
         })()
         result = run_install(args)
         assert result == 1
+
+    def test_bad_bundle(self, tmp_path, capsys):
+        # Bundle with no manifest -> ValueError
+        bundle_path = tmp_path / "bad.tar.gz"
+        with tarfile.open(bundle_path, "w:gz") as tar:
+            data = b"hello"
+            info = tarfile.TarInfo(name="some/file.txt")
+            info.size = len(data)
+            tar.addfile(info, fileobj=io.BytesIO(data))
+
+        args = type("Args", (), {
+            "bundle_path": str(bundle_path),
+            "target": None,
+        })()
+        result = run_install(args)
+        assert result == 1
+
+    @patch("pydepot.installer.subprocess.run")
+    def test_pip_failure(self, mock_run, tmp_path, capsys):
+        mock_run.return_value = MagicMock(
+            returncode=1, stdout="", stderr="pip error"
+        )
+        bundle = _create_test_bundle(tmp_path)
+        args = type("Args", (), {
+            "bundle_path": str(bundle),
+            "target": None,
+        })()
+        result = run_install(args)
+        assert result == 1

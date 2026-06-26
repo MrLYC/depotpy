@@ -1,5 +1,7 @@
 """Tests for platform tags and presets."""
 
+from unittest.mock import patch
+
 import pytest
 
 from pydepot.platforms import (
@@ -8,6 +10,7 @@ from pydepot.platforms import (
     MACOSX_ARM64,
     MACOSX_X86_64,
     WIN_AMD64,
+    WIN_ARM64,
     PLATFORM_PRESETS,
     PlatformTag,
     get_current_platform,
@@ -98,6 +101,51 @@ class TestGetCurrentPlatform:
         assert result.os != ""
         assert result.arch != ""
         assert result.tag != ""
+
+    @patch("pydepot.platforms.platform.system", return_value="Linux")
+    @patch("pydepot.platforms.platform.machine", return_value="x86_64")
+    def test_linux_x86_64(self, mock_machine, mock_system):
+        result = get_current_platform()
+        assert result == MANYLINUX_X86_64
+
+    @patch("pydepot.platforms.platform.system", return_value="Linux")
+    @patch("pydepot.platforms.platform.machine", return_value="aarch64")
+    def test_linux_aarch64(self, mock_machine, mock_system):
+        result = get_current_platform()
+        assert result == MANYLINUX_AARCH64
+
+    @patch("pydepot.platforms.platform.system", return_value="Darwin")
+    @patch("pydepot.platforms.platform.machine", return_value="x86_64")
+    def test_macos_x86_64(self, mock_machine, mock_system):
+        result = get_current_platform()
+        assert result == MACOSX_X86_64
+
+    @patch("pydepot.platforms.platform.system", return_value="Darwin")
+    @patch("pydepot.platforms.platform.machine", return_value="arm64")
+    def test_macos_arm64(self, mock_machine, mock_system):
+        result = get_current_platform()
+        assert result == MACOSX_ARM64
+
+    @patch("pydepot.platforms.platform.system", return_value="Windows")
+    @patch("pydepot.platforms.platform.machine", return_value="arm64")
+    def test_windows_arm64(self, mock_machine, mock_system):
+        result = get_current_platform()
+        assert result == WIN_ARM64
+
+    @patch("pydepot.platforms.platform.system", return_value="Windows")
+    @patch("pydepot.platforms.platform.machine", return_value="AMD64")
+    @patch("pydepot.platforms.struct.calcsize", return_value=8)
+    def test_windows_amd64(self, mock_calcsize, mock_machine, mock_system):
+        result = get_current_platform()
+        assert result == WIN_AMD64
+
+    @patch("pydepot.platforms.platform.system", return_value="FreeBSD")
+    @patch("pydepot.platforms.platform.machine", return_value="sparc64")
+    def test_fallback_unknown(self, mock_machine, mock_system):
+        result = get_current_platform()
+        assert result.os == "freebsd"
+        assert result.arch == "sparc64"
+        assert result.tag == "freebsd_sparc64"
 
 
 class TestGetPythonVersion:

@@ -2,7 +2,7 @@
 
 import hashlib
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -170,6 +170,39 @@ class TestScanDownloadedFiles:
         assert len(result) == 2
         assert result[0].name == "a"
         assert result[1].name == "b"
+
+
+class TestRunDownloadCmd:
+    @patch("pydepot.resolver.subprocess.run")
+    def test_success(self, mock_run, tmp_path):
+        from pydepot.resolver import _run_download_cmd
+        mock_run.return_value = MagicMock(returncode=0, stdout="output", stderr="")
+        _run_download_cmd(["pip", "download"], tmp_path)
+        mock_run.assert_called_once()
+
+    @patch("pydepot.resolver.subprocess.run")
+    def test_failure(self, mock_run, tmp_path):
+        from pydepot.resolver import _run_download_cmd
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="error msg")
+        with pytest.raises(RuntimeError, match="Download command failed"):
+            _run_download_cmd(["pip", "download"], tmp_path)
+
+    @patch("pydepot.resolver.subprocess.run")
+    def test_empty_stdout(self, mock_run, tmp_path):
+        from pydepot.resolver import _run_download_cmd
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        _run_download_cmd(["pip", "download"], tmp_path)
+
+
+class TestDownloadForPlatform:
+    def test_pip_empty_deps(self, tmp_path):
+        from pydepot.resolver import _download_for_platform_pip
+        # Should return without calling anything
+        _download_for_platform_pip([], tmp_path, MANYLINUX_X86_64)
+
+    def test_uv_empty_deps(self, tmp_path):
+        from pydepot.resolver import _download_for_platform_uv
+        _download_for_platform_uv([], tmp_path, MANYLINUX_X86_64)
 
 
 class TestDownloadPackages:

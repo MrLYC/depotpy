@@ -107,3 +107,18 @@ class TestRunInspect:
 
         err = capsys.readouterr().err
         assert "Error" in err
+
+    def test_bad_bundle_no_manifest(self, tmp_path, capsys):
+        bundle_path = tmp_path / "bad.tar.gz"
+        with tarfile.open(bundle_path, "w:gz") as tar:
+            data = b"hello"
+            info = tarfile.TarInfo(name="some/file.txt")
+            info.size = len(data)
+            tar.addfile(info, fileobj=io.BytesIO(data))
+
+        args = type("Args", (), {"bundle_path": str(bundle_path)})()
+        result = run_inspect(args)
+        assert result == 1
+
+        err = capsys.readouterr().err
+        assert "Error" in err

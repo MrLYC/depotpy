@@ -1,5 +1,7 @@
 """Tests for CLI entry point."""
 
+from unittest.mock import patch
+
 import pytest
 
 from pydepot.cli import create_parser, main
@@ -64,3 +66,28 @@ class TestCreateParser:
         parser = create_parser()
         args = parser.parse_args(["install", "/some/bundle.tar.gz", "--target", "/install/dir"])
         assert args.target == "/install/dir"
+
+
+class TestMainDispatch:
+    @patch("pydepot.commands.pack.run_pack", return_value=0)
+    def test_dispatch_pack(self, mock_run):
+        result = main(["pack", "/some/project"])
+        assert result == 0
+        mock_run.assert_called_once()
+
+    @patch("pydepot.commands.inspect.run_inspect", return_value=0)
+    def test_dispatch_inspect(self, mock_run):
+        result = main(["inspect", "/some/bundle.tar.gz"])
+        assert result == 0
+        mock_run.assert_called_once()
+
+    @patch("pydepot.commands.install.run_install", return_value=0)
+    def test_dispatch_install(self, mock_run):
+        result = main(["install", "/some/bundle.tar.gz"])
+        assert result == 0
+        mock_run.assert_called_once()
+
+    @patch("pydepot.commands.pack.run_pack", return_value=1)
+    def test_dispatch_returns_error_code(self, mock_run):
+        result = main(["pack", "/some/project"])
+        assert result == 1
