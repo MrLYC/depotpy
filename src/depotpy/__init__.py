@@ -1,6 +1,6 @@
 """DepotPy - Build cross-platform offline installation packages for Python projects."""
 
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 
 from depotpy.commands.inspect import BundleInspector
 from depotpy.installer import BundleInstaller
