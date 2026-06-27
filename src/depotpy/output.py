@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import sys
+from typing import Any
 
 
 def setup_logging(verbosity: int = 0) -> None:
@@ -28,7 +29,7 @@ def setup_logging(verbosity: int = 0) -> None:
     )
 
 
-def print_json(data: dict) -> None:
+def print_json(data: dict[str, Any]) -> None:
     """Print a JSON object to stdout."""
     json.dump(data, sys.stdout, indent=2)
     sys.stdout.write("\n")

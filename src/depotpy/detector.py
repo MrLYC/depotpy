@@ -7,18 +7,19 @@ import json
 import logging
 import shutil
 from pathlib import Path
+from typing import Any
 
 from depotpy.models import DependencyManager, ProjectInfo
 
 try:
     import tomllib
 except ImportError:
-    import tomli as tomllib  # type: ignore[no-redef]
+    import tomli as tomllib  # type: ignore[no-redef,import-not-found]
 
 logger = logging.getLogger(__name__)
 
 
-def _read_toml(path: Path) -> dict | None:
+def _read_toml(path: Path) -> dict[str, Any] | None:
     """Read a TOML file and return its contents as a dict.
 
     Returns None if the file cannot be parsed.

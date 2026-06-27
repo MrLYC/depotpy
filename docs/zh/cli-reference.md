@@ -6,7 +6,16 @@
 depotpy --version    # 显示版本号
 depotpy --help       # 显示帮助信息
 depotpy -h           # 显示帮助信息（短格式）
+depotpy -v ...       # 启用详细（调试）输出
+depotpy -q ...       # 静默模式，仅显示警告和错误
 ```
+
+| 选项 | 说明 |
+|------|------|
+| `--version` | 显示版本号并退出 |
+| `-h, --help` | 显示帮助信息并退出 |
+| `-v, --verbose` | 启用详细（调试）输出 |
+| `-q, --quiet` | 静默模式，仅显示警告和错误 |
 
 ## `depotpy pack`
 
@@ -31,6 +40,9 @@ depotpy pack <project_path> [选项]
 | `--python-version VER` | 覆盖 Python 版本（如 `3.11`、`3.12`） | 当前 Python 版本 |
 | `--exclude PKG` | 排除指定依赖，可多次指定 | 无 |
 | `--include-extras EXTRA` | 包含 extras 依赖组，可多次指定 | 无 |
+| `--prefer {wheel,source}` | 优先下载 wheel 还是源码包 | `wheel` |
+| `--dry-run` | 仅预览将要下载的内容，不实际下载 | 关闭 |
+| `--json` | 以 JSON 格式输出结果到标准输出 | 关闭 |
 
 ### 平台取值
 
@@ -73,6 +85,21 @@ depotpy pack . --exclude pytest --exclude coverage
 
 # 自定义输出目录和 Python 版本
 depotpy pack . -o ./dist --python-version 3.12
+
+# 优先下载源码包
+depotpy pack . --prefer source
+
+# 预览将要下载的内容（干跑模式）
+depotpy pack . --platform all --dry-run
+
+# 机器可读的 JSON 输出
+depotpy pack . --json
+
+# 调试模式，显示详细日志
+depotpy -v pack .
+
+# 静默模式，用于脚本
+depotpy -q pack . --json
 ```
 
 ### 输出
@@ -95,7 +122,7 @@ depotpy pack . -o ./dist --python-version 3.12
 查看离线包的内容和元数据。
 
 ```bash
-depotpy inspect <bundle_path>
+depotpy inspect <bundle_path> [选项]
 ```
 
 ### 参数
@@ -104,10 +131,19 @@ depotpy inspect <bundle_path>
 |------|------|
 | `bundle_path` | `.tar.gz` 离线包文件路径 |
 
+### 选项
+
+| 选项 | 说明 | 默认值 |
+|------|------|--------|
+| `--json` | 以 JSON 格式输出结果到标准输出 | 关闭 |
+
 ### 示例
 
 ```bash
 depotpy inspect myapp-1.0.0-offline.tar.gz
+
+# 机器可读输出
+depotpy inspect myapp-1.0.0-offline.tar.gz --json
 ```
 
 ### 输出
@@ -147,6 +183,16 @@ depotpy install <bundle_path> [选项]
 | 选项 | 说明 | 默认值 |
 |------|------|--------|
 | `--target DIR` | 安装到指定目录 | 当前环境 |
+| `--on-conflict {keep,overwrite,error}` | 与已安装包冲突时的处理方式 | `keep` |
+| `--json` | 以 JSON 格式输出结果到标准输出 | 关闭 |
+
+`--on-conflict` 冲突策略：
+
+| 策略 | 行为 |
+|------|------|
+| `keep` | 保留已安装的版本，跳过冲突的包 |
+| `overwrite` | 强制重新安装离线包中的所有包 |
+| `error` | 检测到版本冲突时报错退出 |
 
 ### 示例
 
@@ -156,6 +202,15 @@ depotpy install myapp-1.0.0-offline.tar.gz
 
 # 安装到指定目录
 depotpy install myapp-1.0.0-offline.tar.gz --target /opt/myapp/lib
+
+# 强制重新安装所有包
+depotpy install myapp-1.0.0-offline.tar.gz --on-conflict overwrite
+
+# 存在版本冲突时报错
+depotpy install myapp-1.0.0-offline.tar.gz --on-conflict error
+
+# 机器可读输出
+depotpy install myapp-1.0.0-offline.tar.gz --json
 ```
 
 ### 手动安装

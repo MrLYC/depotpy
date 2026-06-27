@@ -14,7 +14,7 @@ Builds an offline installation bundle from a Python project.
 
 ```python
 from depotpy.packer import PackBuilder
-from depotpy.models import PackOptions
+from depotpy.models import PackOptions, PackagePreference
 from pathlib import Path
 
 options = PackOptions(
@@ -24,17 +24,18 @@ options = PackOptions(
     python_version="3.11",
     exclude=["pytest"],
     include_extras=["dev"],
+    prefer=PackagePreference.WHEEL,
 )
 builder = PackBuilder(options)
 ```
 
 ### Methods
 
-#### `build() -> Path`
+#### `build() -> tuple[Path, Manifest]`
 
 Execute the full build pipeline: detect project, resolve dependencies, download wheels, generate manifest, and create the tar.gz bundle.
 
-**Returns**: Path to the created `.tar.gz` file.
+**Returns**: Tuple of (path to the created `.tar.gz` file, Manifest object).
 
 **Raises**:
 - `FileNotFoundError` — project path does not exist
@@ -42,8 +43,9 @@ Execute the full build pipeline: detect project, resolve dependencies, download 
 - `RuntimeError` — dependency download fails
 
 ```python
-bundle_path = builder.build()
+bundle_path, manifest = builder.build()
 print(f"Bundle created at: {bundle_path}")
+print(f"Total packages: {manifest.package_count}")
 ```
 
 ---
@@ -81,7 +83,7 @@ print(data["packages"])        # list of package dicts
 
 #### `print_summary() -> None`
 
-Print a human-readable summary to stdout.
+Print a human-readable summary to stderr.
 
 ```python
 inspector.print_summary()
@@ -104,24 +106,33 @@ installer = BundleInstaller(Path("myapp-1.0.0-offline.tar.gz"))
 
 ### Methods
 
-#### `install(target: str | None = None) -> None`
+#### `install(target: str | None = None, on_conflict: ConflictPolicy = ConflictPolicy.KEEP) -> None`
 
 Extract the bundle and install packages using pip.
 
 **Parameters**:
 - `target` — Optional directory to install into (pip `--target`)
+- `on_conflict` — How to handle conflicts with installed packages (see `ConflictPolicy`)
 
 **Raises**:
 - `FileNotFoundError` — bundle file does not exist
 - `ValueError` — bundle has no manifest
-- `RuntimeError` — pip install fails
+- `RuntimeError` — pip install fails, or conflicts detected with `ConflictPolicy.ERROR`
 
 ```python
+from depotpy.models import ConflictPolicy
+
 # Install into current environment
 installer.install()
 
 # Install into specific directory
 installer.install(target="/opt/myapp/lib")
+
+# Force reinstall all packages
+installer.install(on_conflict=ConflictPolicy.OVERWRITE)
+
+# Abort on version conflicts
+installer.install(on_conflict=ConflictPolicy.ERROR)
 ```
 
 ---
@@ -133,7 +144,7 @@ installer.install(target="/opt/myapp/lib")
 Options for the pack command.
 
 ```python
-from depotpy.models import PackOptions
+from depotpy.models import PackOptions, PackagePreference
 from pathlib import Path
 
 options = PackOptions(
@@ -143,6 +154,7 @@ options = PackOptions(
     python_version=None,           # Optional: override Python version
     exclude=[],                    # Optional: dependencies to exclude
     include_extras=[],             # Optional: extras to include
+    prefer=PackagePreference.WHEEL,  # Optional: wheel or source preference
 )
 ```
 
@@ -214,6 +226,29 @@ DependencyManager.POETRY    # "poetry"
 DependencyManager.PDM       # "pdm"
 DependencyManager.PIPENV    # "pipenv"
 DependencyManager.PIP       # "pip"
+```
+
+### PackagePreference
+
+Enum for package format preference.
+
+```python
+from depotpy.models import PackagePreference
+
+PackagePreference.WHEEL     # "wheel" — prefer pre-built wheels (default)
+PackagePreference.SOURCE    # "source" — prefer source distributions
+```
+
+### ConflictPolicy
+
+Enum for handling conflicts with installed packages.
+
+```python
+from depotpy.models import ConflictPolicy
+
+ConflictPolicy.KEEP         # "keep" — keep existing, skip conflicts (default)
+ConflictPolicy.OVERWRITE    # "overwrite" — force reinstall from bundle
+ConflictPolicy.ERROR        # "error" — abort if conflicts detected
 ```
 
 ---

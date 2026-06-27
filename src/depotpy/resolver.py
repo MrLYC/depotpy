@@ -304,7 +304,7 @@ def download_packages(
             if project_info.manager != DependencyManager.PIP:
                 logger.warning(
                     "Download with %s failed for %s, falling back to pip",
-                    project_info.manager.value,
+                    project_info.manager.value if project_info.manager else "unknown",
                     platform.tag,
                 )
                 _download_for_platform_pip(

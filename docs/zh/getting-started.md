@@ -115,6 +115,24 @@ depotpy pack . --include-extras dev --include-extras docs
 
 # 指定输出目录
 depotpy pack . -o /path/to/output/
+
+# 优先下载源码包而非 wheel
+depotpy pack . --prefer source
+
+# 预览将要下载的内容，不实际下载（干跑模式）
+depotpy pack . --platform all --dry-run
+
+# 机器可读的 JSON 输出（适用于脚本）
+depotpy pack . --json
+depotpy inspect myapp-1.0.0-offline.tar.gz --json
+
+# 安装时处理版本冲突
+depotpy install bundle.tar.gz --on-conflict overwrite  # 强制重新安装
+depotpy install bundle.tar.gz --on-conflict error      # 有冲突时报错
+
+# 详细/静默输出
+depotpy -v pack .    # 调试级别日志
+depotpy -q pack .    # 仅显示警告和错误
 ```
 
 ## 下一步

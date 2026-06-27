@@ -14,7 +14,7 @@ from depotpy import PackBuilder, BundleInspector, BundleInstaller
 
 ```python
 from depotpy.packer import PackBuilder
-from depotpy.models import PackOptions
+from depotpy.models import PackOptions, PackagePreference
 from pathlib import Path
 
 options = PackOptions(
@@ -24,17 +24,18 @@ options = PackOptions(
     python_version="3.11",
     exclude=["pytest"],
     include_extras=["dev"],
+    prefer=PackagePreference.WHEEL,
 )
 builder = PackBuilder(options)
 ```
 
 ### 方法
 
-#### `build() -> Path`
+#### `build() -> tuple[Path, Manifest]`
 
 执行完整的构建流程：检测项目、解析依赖、下载 wheels、生成清单、创建 tar.gz 包。
 
-**返回**: 创建的 `.tar.gz` 文件路径。
+**返回**: 元组 (创建的 `.tar.gz` 文件路径, Manifest 对象)。
 
 **异常**:
 - `FileNotFoundError` — 项目路径不存在
@@ -42,8 +43,9 @@ builder = PackBuilder(options)
 - `RuntimeError` — 依赖下载失败
 
 ```python
-bundle_path = builder.build()
+bundle_path, manifest = builder.build()
 print(f"离线包已创建: {bundle_path}")
+print(f"总包数: {manifest.package_count}")
 ```
 
 ---
@@ -81,7 +83,7 @@ print(data["packages"])        # 包信息列表
 
 #### `print_summary() -> None`
 
-向标准输出打印可读的摘要信息。
+向标准错误输出打印可读的摘要信息。
 
 ```python
 inspector.print_summary()
@@ -104,24 +106,33 @@ installer = BundleInstaller(Path("myapp-1.0.0-offline.tar.gz"))
 
 ### 方法
 
-#### `install(target: str | None = None) -> None`
+#### `install(target: str | None = None, on_conflict: ConflictPolicy = ConflictPolicy.KEEP) -> None`
 
 解压离线包并通过 pip 安装。
 
 **参数**:
 - `target` — 可选的安装目标目录（pip 的 `--target` 参数）
+- `on_conflict` — 与已安装包冲突时的处理方式（见 `ConflictPolicy`）
 
 **异常**:
 - `FileNotFoundError` — 离线包文件不存在
 - `ValueError` — 离线包中没有清单文件
-- `RuntimeError` — pip install 执行失败
+- `RuntimeError` — pip install 执行失败，或 `ConflictPolicy.ERROR` 策略下检测到冲突
 
 ```python
+from depotpy.models import ConflictPolicy
+
 # 安装到当前环境
 installer.install()
 
 # 安装到指定目录
 installer.install(target="/opt/myapp/lib")
+
+# 强制重新安装所有包
+installer.install(on_conflict=ConflictPolicy.OVERWRITE)
+
+# 存在版本冲突时报错退出
+installer.install(on_conflict=ConflictPolicy.ERROR)
 ```
 
 ---
@@ -133,7 +144,7 @@ installer.install(target="/opt/myapp/lib")
 打包命令的选项。
 
 ```python
-from depotpy.models import PackOptions
+from depotpy.models import PackOptions, PackagePreference
 from pathlib import Path
 
 options = PackOptions(
@@ -143,6 +154,7 @@ options = PackOptions(
     python_version=None,           # 可选：覆盖 Python 版本
     exclude=[],                    # 可选：要排除的依赖
     include_extras=[],             # 可选：要包含的 extras
+    prefer=PackagePreference.WHEEL,  # 可选：wheel 或源码包偏好
 )
 ```
 
@@ -214,6 +226,29 @@ DependencyManager.POETRY    # "poetry"
 DependencyManager.PDM       # "pdm"
 DependencyManager.PIPENV    # "pipenv"
 DependencyManager.PIP       # "pip"
+```
+
+### PackagePreference
+
+包格式偏好枚举。
+
+```python
+from depotpy.models import PackagePreference
+
+PackagePreference.WHEEL     # "wheel" — 优先预编译 wheel（默认）
+PackagePreference.SOURCE    # "source" — 优先源码分发包
+```
+
+### ConflictPolicy
+
+已安装包冲突处理策略枚举。
+
+```python
+from depotpy.models import ConflictPolicy
+
+ConflictPolicy.KEEP         # "keep" — 保留已安装版本，跳过冲突（默认）
+ConflictPolicy.OVERWRITE    # "overwrite" — 强制从离线包重新安装
+ConflictPolicy.ERROR        # "error" — 检测到冲突时中止
 ```
 
 ---

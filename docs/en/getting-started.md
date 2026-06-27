@@ -115,6 +115,24 @@ depotpy pack . --include-extras dev --include-extras docs
 
 # Specify output directory
 depotpy pack . -o /path/to/output/
+
+# Prefer source distributions over wheels
+depotpy pack . --prefer source
+
+# Preview what will be downloaded without downloading (dry run)
+depotpy pack . --platform all --dry-run
+
+# Machine-readable JSON output (useful for scripting)
+depotpy pack . --json
+depotpy inspect myapp-1.0.0-offline.tar.gz --json
+
+# Handle version conflicts during install
+depotpy install bundle.tar.gz --on-conflict overwrite  # Force reinstall
+depotpy install bundle.tar.gz --on-conflict error      # Fail on conflicts
+
+# Verbose/quiet output
+depotpy -v pack .    # Debug-level logging
+depotpy -q pack .    # Warnings and errors only
 ```
 
 ## Next Steps

@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
 from pathlib import Path
+from typing import Any
 
 from depotpy.models import Manifest, PackageFile
 
 
-def manifest_to_dict(manifest: Manifest) -> dict:
+def manifest_to_dict(manifest: Manifest) -> dict[str, Any]:
     """Convert a Manifest to a JSON-serializable dict."""
     return {
         "project_name": manifest.project_name,
@@ -33,7 +33,7 @@ def manifest_to_dict(manifest: Manifest) -> dict:
     }
 
 
-def manifest_from_dict(data: dict) -> Manifest:
+def manifest_from_dict(data: dict[str, Any]) -> Manifest:
     """Reconstruct a Manifest from a dict (e.g. loaded from JSON)."""
     packages = [
         PackageFile(

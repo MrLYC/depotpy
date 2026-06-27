@@ -6,6 +6,7 @@ import argparse
 import json
 import tarfile
 from pathlib import Path
+from typing import Any
 
 from depotpy.manifest import manifest_from_dict
 from depotpy.output import error_json, print_error, print_json, print_text, setup_logging
@@ -17,7 +18,7 @@ class BundleInspector:
     def __init__(self, bundle_path: Path) -> None:
         self.bundle_path = bundle_path
 
-    def get_manifest(self) -> dict:
+    def get_manifest(self) -> dict[str, Any]:
         """Extract and return the manifest data from the bundle.
 
         Raises:
@@ -32,7 +33,8 @@ class BundleInspector:
                 if member.name.endswith("/manifest.json"):
                     f = tar.extractfile(member)
                     if f is not None:
-                        return json.load(f)
+                        result: dict[str, Any] = json.load(f)
+                        return result
 
         raise ValueError(f"No manifest.json found in bundle: {self.bundle_path}")
 

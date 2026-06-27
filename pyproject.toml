@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "depotpy"
-version = "0.3.0"
+version = "1.0.0"
 description = "Build cross-platform offline installation packages for Python projects"
 readme = "README.md"
 license = "MIT"
@@ -13,7 +13,7 @@ authors = [
     { name = "MrLYC", email = "imyikong@gmail.com" },
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -36,10 +36,17 @@ depotpy = "depotpy.cli:main"
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "mypy>=1.0",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/depotpy"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

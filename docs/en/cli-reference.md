@@ -6,7 +6,16 @@
 depotpy --version    # Show version
 depotpy --help       # Show help
 depotpy -h           # Show help (short form)
+depotpy -v ...       # Enable verbose (debug) output
+depotpy -q ...       # Suppress informational output (warnings and errors only)
 ```
+
+| Option | Description |
+|--------|-------------|
+| `--version` | Show version and exit |
+| `-h, --help` | Show help and exit |
+| `-v, --verbose` | Enable verbose (debug) output |
+| `-q, --quiet` | Suppress informational output (warnings and errors only) |
 
 ## `depotpy pack`
 
@@ -31,6 +40,9 @@ depotpy pack <project_path> [options]
 | `--python-version VER` | Override Python version (e.g. `3.11`, `3.12`) | Current Python version |
 | `--exclude PKG` | Exclude a dependency by name. Can be specified multiple times | None |
 | `--include-extras EXTRA` | Include an extras group. Can be specified multiple times | None |
+| `--prefer {wheel,source}` | Prefer wheel or source packages | `wheel` |
+| `--dry-run` | Show what would be downloaded without actually downloading | Off |
+| `--json` | Output result as JSON to stdout | Off |
 
 ### Platform Values
 
@@ -73,6 +85,21 @@ depotpy pack . --exclude pytest --exclude coverage
 
 # Pack with custom output and Python version
 depotpy pack . -o ./dist --python-version 3.12
+
+# Prefer source distributions
+depotpy pack . --prefer source
+
+# Preview what would be downloaded (dry run)
+depotpy pack . --platform all --dry-run
+
+# Machine-readable JSON output
+depotpy pack . --json
+
+# Verbose output for debugging
+depotpy -v pack .
+
+# Quiet mode for scripts
+depotpy -q pack . --json
 ```
 
 ### Output
@@ -95,7 +122,7 @@ The bundle contains:
 Display the contents and metadata of an offline bundle.
 
 ```bash
-depotpy inspect <bundle_path>
+depotpy inspect <bundle_path> [options]
 ```
 
 ### Arguments
@@ -104,10 +131,19 @@ depotpy inspect <bundle_path>
 |----------|-------------|
 | `bundle_path` | Path to the `.tar.gz` bundle file |
 
+### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--json` | Output result as JSON to stdout | Off |
+
 ### Examples
 
 ```bash
 depotpy inspect myapp-1.0.0-offline.tar.gz
+
+# Machine-readable output
+depotpy inspect myapp-1.0.0-offline.tar.gz --json
 ```
 
 ### Output
@@ -147,6 +183,16 @@ depotpy install <bundle_path> [options]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--target DIR` | Install packages into a specific directory | Current environment |
+| `--on-conflict {keep,overwrite,error}` | How to handle conflicts with installed packages | `keep` |
+| `--json` | Output result as JSON to stdout | Off |
+
+The `--on-conflict` policies:
+
+| Policy | Behavior |
+|--------|----------|
+| `keep` | Keep existing installed versions, skip conflicting packages |
+| `overwrite` | Force reinstall all packages from the bundle |
+| `error` | Abort with an error if any version conflicts are detected |
 
 ### Examples
 
@@ -156,6 +202,15 @@ depotpy install myapp-1.0.0-offline.tar.gz
 
 # Install into a specific directory
 depotpy install myapp-1.0.0-offline.tar.gz --target /opt/myapp/lib
+
+# Force reinstall all packages
+depotpy install myapp-1.0.0-offline.tar.gz --on-conflict overwrite
+
+# Fail if there are version conflicts
+depotpy install myapp-1.0.0-offline.tar.gz --on-conflict error
+
+# Machine-readable output
+depotpy install myapp-1.0.0-offline.tar.gz --json
 ```
 
 ### Manual Installation
