@@ -8,7 +8,9 @@ import subprocess
 import tarfile
 import tempfile
 from pathlib import Path
+from typing import Any
 
+from depotpy.fs import FileSystem, is_local, local_copy
 from depotpy.manifest import manifest_from_dict
 from depotpy.models import ConflictPolicy, Manifest
 
@@ -67,8 +69,20 @@ def _check_conflicts(
 class BundleInstaller:
     """Install packages from an offline bundle."""
 
-    def __init__(self, bundle_path: Path) -> None:
-        self.bundle_path = bundle_path
+    def __init__(
+        self,
+        bundle_path: Path | str,
+        filesystem: FileSystem | None = None,
+    ) -> None:
+        """Initialize the installer.
+
+        Args:
+            bundle_path: Path to the bundle file.
+            filesystem: Optional filesystem for reading remote bundles.
+                        Accepts any fsspec-compatible filesystem.
+        """
+        self.bundle_path = Path(bundle_path) if isinstance(bundle_path, str) else bundle_path
+        self._fs = filesystem
 
     def install(
         self,
@@ -86,14 +100,26 @@ class BundleInstaller:
             ValueError: If bundle has no manifest.
             RuntimeError: If pip install fails or conflicts are found (with error policy).
         """
-        if not self.bundle_path.exists():
-            raise FileNotFoundError(f"Bundle not found: {self.bundle_path}")
+        if self._fs is not None and not is_local(self._fs):
+            with local_copy(self._fs, str(self.bundle_path), suffix=".tar.gz") as local_bundle:
+                self._do_install(local_bundle, target, on_conflict)
+        else:
+            if not self.bundle_path.exists():
+                raise FileNotFoundError(f"Bundle not found: {self.bundle_path}")
+            self._do_install(self.bundle_path, target, on_conflict)
 
+    def _do_install(
+        self,
+        bundle_path: Path,
+        target: str | None,
+        on_conflict: ConflictPolicy,
+    ) -> None:
+        """Execute the installation from a local bundle path."""
         with tempfile.TemporaryDirectory() as tmp_dir:
             extract_dir = Path(tmp_dir)
 
             # Extract the bundle
-            with tarfile.open(self.bundle_path, "r:gz") as tar:
+            with tarfile.open(bundle_path, "r:gz") as tar:
                 tar.extractall(path=extract_dir, filter="data")
 
             # Find the manifest

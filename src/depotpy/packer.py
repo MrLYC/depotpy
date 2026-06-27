@@ -6,8 +6,10 @@ import logging
 import tarfile
 import tempfile
 from pathlib import Path
+from typing import Any
 
 from depotpy.detector import detect_project
+from depotpy.fs import FileSystem, is_local
 from depotpy.manifest import write_manifest
 from depotpy.models import Manifest, PackageFile, PackOptions, ProjectInfo
 from depotpy.platforms import PlatformTag, get_python_version, resolve_platforms
@@ -98,8 +100,23 @@ def _create_bundle_tarball(
 class PackBuilder:
     """High-level API for building offline installation bundles."""
 
-    def __init__(self, options: PackOptions) -> None:
+    def __init__(
+        self,
+        options: PackOptions,
+        filesystem: FileSystem | None = None,
+        output_path: str | None = None,
+    ) -> None:
+        """Initialize the pack builder.
+
+        Args:
+            options: Pack options.
+            filesystem: Optional filesystem for uploading the bundle.
+                        Accepts any fsspec-compatible filesystem.
+            output_path: Remote output path when using a non-local filesystem.
+        """
         self.options = options
+        self._fs = filesystem
+        self._output_path = output_path
 
     def build(self) -> tuple[Path, Manifest]:
         """Build the offline bundle.
@@ -166,4 +183,14 @@ class PackBuilder:
             )
 
             logger.info("Created bundle: %s", tarball_path)
+
+            # Upload to remote filesystem if configured
+            if self._fs is not None and not is_local(self._fs):
+                remote_path = self._output_path or f"{output_dir}/{tarball_path.name}"
+                self._fs.makedirs(
+                    str(Path(remote_path).parent), exist_ok=True
+                )
+                self._fs.put(str(tarball_path), remote_path)
+                logger.info("Uploaded bundle to: %s", remote_path)
+
             return tarball_path, manifest

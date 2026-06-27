@@ -8,6 +8,7 @@ import tarfile
 from pathlib import Path
 from typing import Any
 
+from depotpy.fs import FileSystem, is_local, local_copy
 from depotpy.manifest import manifest_from_dict
 from depotpy.output import error_json, print_error, print_json, print_text, setup_logging
 
@@ -15,8 +16,20 @@ from depotpy.output import error_json, print_error, print_json, print_text, setu
 class BundleInspector:
     """Inspect an offline installation bundle."""
 
-    def __init__(self, bundle_path: Path) -> None:
-        self.bundle_path = bundle_path
+    def __init__(
+        self,
+        bundle_path: Path | str,
+        filesystem: FileSystem | None = None,
+    ) -> None:
+        """Initialize the inspector.
+
+        Args:
+            bundle_path: Path to the bundle file.
+            filesystem: Optional filesystem for reading remote bundles.
+                        Accepts any fsspec-compatible filesystem.
+        """
+        self.bundle_path = Path(bundle_path) if isinstance(bundle_path, str) else bundle_path
+        self._fs = filesystem
 
     def get_manifest(self) -> dict[str, Any]:
         """Extract and return the manifest data from the bundle.
@@ -25,10 +38,17 @@ class BundleInspector:
             FileNotFoundError: If bundle doesn't exist.
             ValueError: If bundle doesn't contain a manifest.
         """
-        if not self.bundle_path.exists():
-            raise FileNotFoundError(f"Bundle not found: {self.bundle_path}")
+        if self._fs is not None and not is_local(self._fs):
+            with local_copy(self._fs, str(self.bundle_path), suffix=".tar.gz") as local_bundle:
+                return self._read_manifest(local_bundle)
+        else:
+            if not self.bundle_path.exists():
+                raise FileNotFoundError(f"Bundle not found: {self.bundle_path}")
+            return self._read_manifest(self.bundle_path)
 
-        with tarfile.open(self.bundle_path, "r:gz") as tar:
+    def _read_manifest(self, bundle_path: Path) -> dict[str, Any]:
+        """Read manifest from a local bundle file."""
+        with tarfile.open(bundle_path, "r:gz") as tar:
             for member in tar.getmembers():
                 if member.name.endswith("/manifest.json"):
                     f = tar.extractfile(member)
@@ -70,10 +90,18 @@ def run_inspect(args: argparse.Namespace) -> int:
     """Execute the inspect subcommand."""
     setup_logging(_get_verbosity(args))
     json_output = getattr(args, "json_output", False)
-    bundle_path = Path(args.bundle_path)
+    bundle_path_str = args.bundle_path
+
+    # Detect remote filesystem from bundle URL
+    fs = None
+    if "://" in bundle_path_str:
+        from depotpy.fs import filesystem_from_url
+        fs, bundle_path_str = filesystem_from_url(bundle_path_str)
+
+    bundle_path = Path(bundle_path_str)
 
     try:
-        inspector = BundleInspector(bundle_path)
+        inspector = BundleInspector(bundle_path, filesystem=fs)
         if json_output:
             data = inspector.get_manifest()
             data["success"] = True

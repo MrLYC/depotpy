@@ -24,12 +24,20 @@ def run_install(args: argparse.Namespace) -> int:
     setup_logging(_get_verbosity(args))
     json_output = getattr(args, "json_output", False)
 
-    bundle_path = Path(args.bundle_path)
+    bundle_path_str = args.bundle_path
     target = getattr(args, "target", None)
     on_conflict = ConflictPolicy(getattr(args, "on_conflict", "keep"))
 
+    # Detect remote filesystem from bundle URL
+    fs = None
+    if "://" in bundle_path_str:
+        from depotpy.fs import filesystem_from_url
+        fs, bundle_path_str = filesystem_from_url(bundle_path_str)
+
+    bundle_path = Path(bundle_path_str)
+
     try:
-        installer = BundleInstaller(bundle_path)
+        installer = BundleInstaller(bundle_path, filesystem=fs)
         installer.install(target=target, on_conflict=on_conflict)
         if json_output:
             print_json({

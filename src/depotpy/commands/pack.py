@@ -80,9 +80,18 @@ def run_pack(args: argparse.Namespace) -> int:
     if getattr(args, "dry_run", False):
         return _run_dry_run(args)
 
+    # Detect remote filesystem from output URL
+    output = args.output
+    fs = None
+    output_path_str = None
+    if "://" in output:
+        from depotpy.fs import filesystem_from_url
+        fs, output_path_str = filesystem_from_url(output)
+        output = "."  # build locally, upload at end
+
     options = PackOptions(
         project_path=Path(args.project_path),
-        output_dir=Path(args.output),
+        output_dir=Path(output),
         platforms=args.platforms or [],
         python_version=args.python_version,
         exclude=args.exclude,
@@ -91,7 +100,7 @@ def run_pack(args: argparse.Namespace) -> int:
     )
 
     try:
-        builder = PackBuilder(options)
+        builder = PackBuilder(options, filesystem=fs, output_path=output_path_str)
         tarball_path, manifest = builder.build()
         if json_output:
             result = manifest_to_dict(manifest)
