@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "depotpy"
-version = "0.2.0"
+version = "0.3.0"
 description = "Build cross-platform offline installation packages for Python projects"
 readme = "README.md"
 license = "MIT"
@@ -22,6 +22,12 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Build Tools",
 ]
+
+[project.urls]
+Homepage = "https://github.com/MrLYC/depotpy"
+Repository = "https://github.com/MrLYC/depotpy"
+Issues = "https://github.com/MrLYC/depotpy/issues"
+Documentation = "https://github.com/MrLYC/depotpy#readme"
 
 [project.scripts]
 depotpy = "depotpy.cli:main"
