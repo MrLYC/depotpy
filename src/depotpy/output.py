@@ -7,12 +7,24 @@ import logging
 import sys
 
 
-def setup_logging() -> None:
-    """Configure logging to output to stderr."""
+def setup_logging(verbosity: int = 0) -> None:
+    """Configure logging to output to stderr.
+
+    Args:
+        verbosity: -1 for quiet (WARNING+), 0 for normal (INFO), 1 for verbose (DEBUG).
+    """
+    if verbosity >= 1:
+        level = logging.DEBUG
+    elif verbosity <= -1:
+        level = logging.WARNING
+    else:
+        level = logging.INFO
+
     logging.basicConfig(
-        level=logging.INFO,
+        level=level,
         format="%(levelname)s: %(message)s",
         stream=sys.stderr,
+        force=True,
     )
 
 

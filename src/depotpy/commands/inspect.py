@@ -55,9 +55,18 @@ class BundleInspector:
             print_text(f"  {pkg.name} {pkg.version} ({kind}, {platforms}, {pkg.size / 1024:.0f} KB)")
 
 
+def _get_verbosity(args: argparse.Namespace) -> int:
+    """Extract verbosity level from parsed args."""
+    if getattr(args, "verbose", False):
+        return 1
+    if getattr(args, "quiet", False):
+        return -1
+    return 0
+
+
 def run_inspect(args: argparse.Namespace) -> int:
     """Execute the inspect subcommand."""
-    setup_logging()
+    setup_logging(_get_verbosity(args))
     json_output = getattr(args, "json_output", False)
     bundle_path = Path(args.bundle_path)
 

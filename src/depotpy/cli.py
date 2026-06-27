@@ -14,6 +14,16 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose (debug) output",
+    )
+    parser.add_argument(
+        "-q", "--quiet",
+        action="store_true",
+        help="Suppress informational output (warnings and errors only)",
+    )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -57,6 +67,11 @@ def create_parser() -> argparse.ArgumentParser:
         choices=["wheel", "source"],
         default="wheel",
         help="Prefer wheel or source packages (default: wheel)",
+    )
+    pack_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be downloaded without actually downloading",
     )
     pack_parser.add_argument(
         "--json",

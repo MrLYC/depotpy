@@ -77,6 +77,23 @@ class TestDetectManager:
         assert _detect_manager(tmp_project) == DependencyManager.PIP
 
 
+class TestReadToml:
+    def test_invalid_toml(self, tmp_project):
+        from depotpy.detector import _read_toml
+        bad_toml = tmp_project / "bad.toml"
+        bad_toml.write_text("this is [not valid toml {{{}}")
+        result = _read_toml(bad_toml)
+        assert result is None
+
+    def test_valid_toml(self, tmp_project):
+        from depotpy.detector import _read_toml
+        good_toml = tmp_project / "good.toml"
+        good_toml.write_text('[section]\nkey = "value"\n')
+        result = _read_toml(good_toml)
+        assert result is not None
+        assert result["section"]["key"] == "value"
+
+
 class TestExtractFromPyproject:
     def test_basic(self, tmp_project):
         (tmp_project / "pyproject.toml").write_text(
@@ -162,6 +179,27 @@ class TestExtractFromRequirementsTxt:
         assert info is not None
         assert info.dependencies == ["requests>=2.0", "click"]
         assert info.name == tmp_project.name
+
+    def test_skips_pip_options(self, tmp_project):
+        (tmp_project / "requirements.txt").write_text(
+            "--index-url https://pypi.org/simple\n"
+            "-f /local/wheels\n"
+            "requests>=2.0\n"
+            "-e git+https://example.com/pkg.git#egg=pkg\n"
+            "click\n"
+        )
+        info = _extract_from_requirements_txt(tmp_project)
+        assert info is not None
+        assert info.dependencies == ["requests>=2.0", "click"]
+
+    def test_inline_comments(self, tmp_project):
+        (tmp_project / "requirements.txt").write_text(
+            "requests>=2.0  # HTTP library\n"
+            "click  # CLI toolkit\n"
+        )
+        info = _extract_from_requirements_txt(tmp_project)
+        assert info is not None
+        assert info.dependencies == ["requests>=2.0", "click"]
 
     def test_no_file(self, tmp_project):
         assert _extract_from_requirements_txt(tmp_project) is None

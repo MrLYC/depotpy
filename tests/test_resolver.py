@@ -13,6 +13,9 @@ from depotpy.resolver import (
     _build_pip_download_cmd,
     _build_uv_download_cmd,
     _compute_sha256,
+    _extract_dep_name,
+    _filter_dependencies,
+    _parse_wheel_filename,
     _scan_downloaded_files,
     download_packages,
 )
@@ -31,6 +34,79 @@ class TestComputeSha256:
         f.write_bytes(b"")
         result = _compute_sha256(f)
         assert result == hashlib.sha256(b"").hexdigest()
+
+
+class TestParseWheelFilename:
+    def test_simple_any(self):
+        name, ver, tags = _parse_wheel_filename("requests-2.31.0-py3-none-any.whl")
+        assert name == "requests"
+        assert ver == "2.31.0"
+        assert tags == []
+
+    def test_platform_specific(self):
+        name, ver, tags = _parse_wheel_filename(
+            "numpy-1.26.0-cp311-cp311-manylinux2014_x86_64.whl"
+        )
+        assert name == "numpy"
+        assert ver == "1.26.0"
+        assert tags == ["manylinux2014_x86_64"]
+
+    def test_hyphenated_name(self):
+        name, ver, tags = _parse_wheel_filename(
+            "my-cool-pkg-1.0.0-py3-none-any.whl"
+        )
+        assert name == "my-cool-pkg"
+        assert ver == "1.0.0"
+        assert tags == []
+
+    def test_build_tag(self):
+        name, ver, tags = _parse_wheel_filename(
+            "package-1.0-1-py3-none-any.whl"
+        )
+        assert name == "package"
+        assert ver == "1.0"
+        assert tags == []
+
+    def test_complex_name_with_platform(self):
+        name, ver, tags = _parse_wheel_filename(
+            "azure-storage-blob-12.19.0-cp311-cp311-manylinux2014_x86_64.whl"
+        )
+        assert name == "azure-storage-blob"
+        assert ver == "12.19.0"
+        assert tags == ["manylinux2014_x86_64"]
+
+
+class TestExtractDepName:
+    def test_simple(self):
+        assert _extract_dep_name("requests") == "requests"
+
+    def test_with_version(self):
+        assert _extract_dep_name("requests>=2.0") == "requests"
+
+    def test_with_extras(self):
+        assert _extract_dep_name("package[extra]>=1.0") == "package"
+
+    def test_with_double_equals(self):
+        assert _extract_dep_name("click==8.0") == "click"
+
+    def test_hyphenated(self):
+        assert _extract_dep_name("my-cool-pkg>=1.0") == "my-cool-pkg"
+
+
+class TestFilterDependencies:
+    def test_no_exclude(self):
+        deps = ["requests>=2.0", "click"]
+        assert _filter_dependencies(deps) == deps
+
+    def test_exclude(self):
+        deps = ["requests>=2.0", "click", "pytest"]
+        result = _filter_dependencies(deps, exclude=["pytest"])
+        assert result == ["requests>=2.0", "click"]
+
+    def test_exclude_case_insensitive(self):
+        deps = ["Requests>=2.0"]
+        result = _filter_dependencies(deps, exclude=["requests"])
+        assert result == []
 
 
 class TestBinaryFlag:

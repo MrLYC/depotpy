@@ -68,6 +68,18 @@ class TestGetInstalledPackages:
         result = _get_installed_packages()
         assert result == {}
 
+    @patch("depotpy.installer.subprocess.run")
+    def test_invalid_json_raises(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=0, stdout="not json")
+        with pytest.raises(RuntimeError, match="Failed to parse pip list output"):
+            _get_installed_packages()
+
+    @patch("depotpy.installer.subprocess.run")
+    def test_pip_not_found(self, mock_run):
+        mock_run.side_effect = FileNotFoundError("pip not found")
+        result = _get_installed_packages()
+        assert result == {}
+
 
 class TestCheckConflicts:
     def test_no_conflicts(self):

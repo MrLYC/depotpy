@@ -39,6 +39,23 @@ class TestCreateParser:
         args = parser.parse_args(["pack", "/some/project", "--prefer", "source"])
         assert args.prefer == "source"
 
+    def test_pack_dry_run(self):
+        parser = create_parser()
+        args = parser.parse_args(["pack", "/some/project", "--dry-run"])
+        assert args.dry_run is True
+
+    def test_verbose_flag(self):
+        parser = create_parser()
+        args = parser.parse_args(["-v", "pack", "/some/project"])
+        assert args.verbose is True
+        assert args.quiet is False
+
+    def test_quiet_flag(self):
+        parser = create_parser()
+        args = parser.parse_args(["-q", "pack", "/some/project"])
+        assert args.quiet is True
+        assert args.verbose is False
+
     def test_pack_with_options(self):
         parser = create_parser()
         args = parser.parse_args([

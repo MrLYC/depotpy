@@ -16,19 +16,32 @@ logger = logging.getLogger(__name__)
 
 
 def _get_installed_packages() -> dict[str, str]:
-    """Get a mapping of installed package names (lowercase) to versions."""
-    result = subprocess.run(
-        ["pip", "list", "--format=json"],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
+    """Get a mapping of installed package names (lowercase) to versions.
+
+    Returns empty dict if pip is unavailable. Raises RuntimeError if pip
+    succeeds but output cannot be parsed.
+    """
+    try:
+        result = subprocess.run(
+            ["pip", "list", "--format=json"],
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        logger.warning("pip not found; skipping installed package check")
         return {}
 
-    installed: dict[str, str] = {}
-    for pkg in json.loads(result.stdout):
-        installed[pkg["name"].lower()] = pkg["version"]
-    return installed
+    if result.returncode != 0:
+        logger.warning("pip list failed (exit %d); skipping installed package check", result.returncode)
+        return {}
+
+    try:
+        installed: dict[str, str] = {}
+        for pkg in json.loads(result.stdout):
+            installed[pkg["name"].lower()] = pkg["version"]
+        return installed
+    except (json.JSONDecodeError, KeyError) as e:
+        raise RuntimeError(f"Failed to parse pip list output: {e}") from e
 
 
 def _check_conflicts(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import configparser
 import json
+import logging
 import shutil
 from pathlib import Path
 
@@ -14,11 +15,20 @@ try:
 except ImportError:
     import tomli as tomllib  # type: ignore[no-redef]
 
+logger = logging.getLogger(__name__)
 
-def _read_toml(path: Path) -> dict:
-    """Read a TOML file and return its contents as a dict."""
-    with open(path, "rb") as f:
-        return tomllib.load(f)
+
+def _read_toml(path: Path) -> dict | None:
+    """Read a TOML file and return its contents as a dict.
+
+    Returns None if the file cannot be parsed.
+    """
+    try:
+        with open(path, "rb") as f:
+            return tomllib.load(f)
+    except Exception as e:
+        logger.warning("Failed to parse TOML file %s: %s", path, e)
+        return None
 
 
 def _detect_manager(project_path: Path) -> DependencyManager:
@@ -30,6 +40,8 @@ def _detect_manager(project_path: Path) -> DependencyManager:
 
     if pyproject.exists():
         data = _read_toml(pyproject)
+        if data is None:
+            return DependencyManager.PIP
         tool = data.get("tool", {})
 
         # uv: check for uv.lock or [tool.uv]
@@ -63,6 +75,8 @@ def _extract_from_pyproject(project_path: Path) -> ProjectInfo | None:
         return None
 
     data = _read_toml(pyproject)
+    if data is None:
+        return None
     project = data.get("project", {})
 
     name = project.get("name")
@@ -147,7 +161,11 @@ def _extract_from_requirements_txt(project_path: Path) -> ProjectInfo | None:
     dependencies: list[str] = []
     for line in req_file.read_text().splitlines():
         line = line.strip()
-        if line and not line.startswith("#") and not line.startswith("-"):
+        if not line or line.startswith("#") or line.startswith("-") or line.startswith("--"):
+            continue
+        # Skip inline comments
+        line = line.split("#")[0].strip()
+        if line:
             dependencies.append(line)
 
     name = project_path.name

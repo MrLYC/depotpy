@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import os
+import re
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from depotpy.models import DependencyManager, PackageFile, PackagePreference, ProjectInfo
@@ -23,6 +24,36 @@ def _compute_sha256(filepath: Path) -> str:
     return h.hexdigest()
 
 
+def _parse_wheel_filename(filename: str) -> tuple[str, str, list[str]]:
+    """Parse a wheel filename into (name, version, platform_tags).
+
+    Wheel format: {name}-{ver}(-{build})?-{python}-{abi}-{platform}.whl
+    The last 3 fields (python, abi, platform) are always present.
+    An optional build tag may appear between version and python tag.
+    """
+    stem = filename[:-4]  # strip .whl
+    # Split from the right: platform, abi, python are the last 3 fields
+    # There may be an optional build tag before them
+    parts = stem.split("-")
+    # At minimum: name, version, python, abi, platform = 5 parts
+    # With build tag: name, version, build, python, abi, platform = 6+ parts
+    # But name itself may contain hyphens (normalized to _ in wheels, but not always)
+    platform_tag = parts[-1]
+    # abi = parts[-2], python = parts[-3]
+    # Check if there's a build tag: build tags are numeric
+    if len(parts) >= 6 and parts[-4].isdigit():
+        # Has build tag: name is everything before version (parts[-5])
+        version = parts[-5]
+        name = "-".join(parts[:-5])
+    else:
+        # No build tag: name is everything before version (parts[-4])
+        version = parts[-4] if len(parts) >= 5 else parts[1] if len(parts) >= 2 else "0.0.0"
+        name = "-".join(parts[:-4]) if len(parts) >= 5 else parts[0]
+
+    platform_tags = [] if platform_tag == "any" else [platform_tag]
+    return name, version, platform_tags
+
+
 def _scan_downloaded_files(download_dir: Path) -> list[PackageFile]:
     """Scan a directory for downloaded package files and build PackageFile objects."""
     packages: list[PackageFile] = []
@@ -33,13 +64,7 @@ def _scan_downloaded_files(download_dir: Path) -> list[PackageFile]:
         filename = filepath.name
 
         if filename.endswith(".whl"):
-            # Wheel filename format: {name}-{ver}(-{build})-{python}-{abi}-{platform}.whl
-            parts = filename[:-4].split("-")
-            name = parts[0]
-            version = parts[1]
-            # Platform tag is the last part
-            platform_tag = parts[-1]
-            platform_tags = [] if platform_tag == "any" else [platform_tag]
+            name, version, platform_tags = _parse_wheel_filename(filename)
         elif filename.endswith(".tar.gz"):
             # sdist: {name}-{ver}.tar.gz
             base = filename[:-7]
@@ -80,6 +105,57 @@ def _binary_flag(prefer: PackagePreference) -> str:
     return "--only-binary=:all:"
 
 
+def _extract_dep_name(dep: str) -> str:
+    """Extract the package name from a dependency specifier (PEP 508)."""
+    match = re.match(r"([A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?)", dep)
+    return match.group(1) if match else dep.strip()
+
+
+def _filter_dependencies(
+    dependencies: list[str], exclude: list[str] | None = None
+) -> list[str]:
+    """Filter dependencies, removing excluded packages (case-insensitive)."""
+    excluded = {e.lower() for e in (exclude or [])}
+    return [
+        dep for dep in dependencies
+        if _extract_dep_name(dep).lower() not in excluded
+    ]
+
+
+def _build_download_cmd(
+    base_cmd: list[str],
+    dependencies: list[str],
+    download_dir: Path,
+    platform: PlatformTag,
+    python_version: str | None = None,
+    python_version_transform: str = "raw",
+    exclude: list[str] | None = None,
+    prefer: PackagePreference = PackagePreference.WHEEL,
+) -> list[str]:
+    """Build a download command for pip or uv.
+
+    Args:
+        base_cmd: Base command prefix (e.g. ["pip", "download"] or ["uv", "pip", "download"]).
+        python_version_transform: "dotless" to convert "3.11" to "311" (pip), "raw" to keep as-is (uv).
+    """
+    cmd = [
+        *base_cmd,
+        "--dest", str(download_dir),
+        "--platform", platform.tag,
+        _binary_flag(prefer),
+    ]
+
+    if python_version:
+        if python_version_transform == "dotless":
+            py_ver = python_version.replace(".", "")
+        else:
+            py_ver = python_version
+        cmd.extend(["--python-version", py_ver])
+
+    cmd.extend(_filter_dependencies(dependencies, exclude))
+    return cmd
+
+
 def _build_pip_download_cmd(
     dependencies: list[str],
     download_dir: Path,
@@ -89,25 +165,10 @@ def _build_pip_download_cmd(
     prefer: PackagePreference = PackagePreference.WHEEL,
 ) -> list[str]:
     """Build a pip download command."""
-    cmd = [
-        "pip", "download",
-        "--dest", str(download_dir),
-        "--platform", platform.tag,
-        _binary_flag(prefer),
-    ]
-
-    if python_version:
-        # Convert "3.11" to "311" for pip
-        py_ver = python_version.replace(".", "")
-        cmd.extend(["--python-version", py_ver])
-
-    excluded = set(exclude or [])
-    for dep in dependencies:
-        dep_name = dep.split(">=")[0].split("==")[0].split("<=")[0].split("!=")[0].split("<")[0].split(">")[0].split("[")[0].strip()
-        if dep_name.lower() not in {e.lower() for e in excluded}:
-            cmd.append(dep)
-
-    return cmd
+    return _build_download_cmd(
+        ["pip", "download"], dependencies, download_dir, platform,
+        python_version, "dotless", exclude, prefer,
+    )
 
 
 def _build_uv_download_cmd(
@@ -119,23 +180,10 @@ def _build_uv_download_cmd(
     prefer: PackagePreference = PackagePreference.WHEEL,
 ) -> list[str]:
     """Build a uv pip download command."""
-    cmd = [
-        "uv", "pip", "download",
-        "--dest", str(download_dir),
-        "--platform", platform.tag,
-        _binary_flag(prefer),
-    ]
-
-    if python_version:
-        cmd.extend(["--python-version", python_version])
-
-    excluded = set(exclude or [])
-    for dep in dependencies:
-        dep_name = dep.split(">=")[0].split("==")[0].split("<=")[0].split("!=")[0].split("<")[0].split(">")[0].split("[")[0].strip()
-        if dep_name.lower() not in {e.lower() for e in excluded}:
-            cmd.append(dep)
-
-    return cmd
+    return _build_download_cmd(
+        ["uv", "pip", "download"], dependencies, download_dir, platform,
+        python_version, "raw", exclude, prefer,
+    )
 
 
 def _run_download_cmd(cmd: list[str], download_dir: Path) -> None:
@@ -240,8 +288,8 @@ def download_packages(
     else:
         download_fn = _download_for_platform_pip
 
-    # Download for each platform
-    for platform in platforms:
+    def _download_one_platform(platform: PlatformTag) -> None:
+        """Download packages for a single platform with fallback."""
         logger.info("Downloading packages for platform: %s", platform.tag)
         try:
             download_fn(
@@ -253,7 +301,6 @@ def download_packages(
                 prefer=prefer,
             )
         except RuntimeError:
-            # If the preferred tool fails and it's not pip, retry with pip
             if project_info.manager != DependencyManager.PIP:
                 logger.warning(
                     "Download with %s failed for %s, falling back to pip",
@@ -270,5 +317,35 @@ def download_packages(
                 )
             else:
                 raise
+
+    # Download for each platform (parallel when multiple)
+    total = len(platforms)
+    if total <= 1:
+        for i, platform in enumerate(platforms, 1):
+            logger.info("[%d/%d] Starting download for %s", i, total, platform.tag)
+            _download_one_platform(platform)
+            logger.info("[%d/%d] Completed download for %s", i, total, platform.tag)
+    else:
+        completed = 0
+        errors: list[Exception] = []
+        with ThreadPoolExecutor(max_workers=min(total, 4)) as executor:
+            futures = {
+                executor.submit(_download_one_platform, p): p for p in platforms
+            }
+            for future in as_completed(futures):
+                platform = futures[future]
+                try:
+                    future.result()
+                    completed += 1
+                    logger.info("[%d/%d] Completed download for %s", completed, total, platform.tag)
+                except Exception as exc:
+                    completed += 1
+                    logger.error("[%d/%d] Download failed for %s: %s", completed, total, platform.tag, exc)
+                    errors.append(exc)
+        if errors:
+            raise RuntimeError(
+                f"Download failed for {len(errors)} platform(s): "
+                + "; ".join(str(e) for e in errors)
+            )
 
     return _scan_downloaded_files(download_dir)

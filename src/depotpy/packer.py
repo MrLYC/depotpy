@@ -87,9 +87,10 @@ def _create_bundle_tarball(
 
         # Add package files
         for pkg in manifest.packages:
-            pkg_file = packages_dir / pkg.filename
+            safe_filename = Path(pkg.filename).name  # Prevent path traversal
+            pkg_file = packages_dir / safe_filename
             if pkg_file.exists():
-                tar.add(pkg_file, arcname=f"{bundle_name}/packages/{pkg.filename}")
+                tar.add(pkg_file, arcname=f"{bundle_name}/packages/{safe_filename}")
 
     return tarball_path
 
