@@ -15,8 +15,10 @@ pip install depotpy
 验证安装：
 
 ```bash
-depotpy --version
+python -m depotpy --version
 ```
+
+`depotpy` 和 `python -m depotpy` 等价。`python -m` 形式可以明确使用哪个 Python 环境运行 DepotPy。
 
 ## 创建你的第一个离线包
 
@@ -49,13 +51,13 @@ scp myapp-1.0.0-offline.tar.gz user@target-host:/tmp/
 在目标机器上（无需网络连接）：
 
 ```bash
-# 使用 DepotPy（如果已安装）
+# 使用 DepotPy（会在 pip 执行前校验 manifest 哈希和文件大小）
 depotpy install myapp-1.0.0-offline.tar.gz
 
-# 或者手动安装
+# 或者不校验 manifest，手动安装
 tar xzf myapp-1.0.0-offline.tar.gz
 cd myapp-1.0.0-offline
-pip install --no-index --find-links ./packages <包名列表>
+python -m pip install --no-index --find-links ./packages <包名列表>
 ```
 
 离线包中的 `README.md` 里已经包含了完整的 `pip install` 命令。

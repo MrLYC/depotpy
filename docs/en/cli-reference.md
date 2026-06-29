@@ -190,9 +190,9 @@ The `--on-conflict` policies:
 
 | Policy | Behavior |
 |--------|----------|
-| `keep` | Keep existing installed versions, skip conflicting packages |
-| `overwrite` | Force reinstall all packages from the bundle |
-| `error` | Abort with an error if any version conflicts are detected |
+| `keep` | Do not force reinstall; pip may keep installed packages that already satisfy requirements |
+| `overwrite` | Pass `--force-reinstall` to reinstall packages from the bundle |
+| `error` | Check installed versions before installing and abort if conflicts are detected |
 
 ### Examples
 
@@ -215,15 +215,21 @@ depotpy install myapp-1.0.0-offline.tar.gz --json
 
 ### Manual Installation
 
-You don't need DepotPy installed on the target machine. Extract and use pip directly:
+You can install with DepotPy to verify manifest hashes and file sizes before invoking pip:
+
+```bash
+depotpy install myapp-1.0.0-offline.tar.gz
+```
+
+If DepotPy is not available on the target machine, extract and use pip directly. Manual pip installation does not perform manifest verification:
 
 ```bash
 tar xzf myapp-1.0.0-offline.tar.gz
 cd myapp-1.0.0-offline
-pip install --no-index --find-links ./packages <package-names>
+python -m pip install --no-index --find-links ./packages <package-names>
 ```
 
-The exact command with all package names is in the bundle's `README.md`.
+The exact manual command with all package names is in the bundle's `README.md`.
 
 ---
 
@@ -246,4 +252,12 @@ DepotPy automatically detects which dependency manager your project uses:
 | 4 | pipenv | `Pipfile` or `Pipfile.lock` | Falls back to pip |
 | 5 | pip | `requirements.txt`, `setup.py`, `setup.cfg` | `pip download` |
 
-If the detected tool is not installed on the system, DepotPy automatically falls back to pip for downloading.
+If the detected tool is not installed on the system, DepotPy automatically falls back to pip for downloading. This fallback downloads from declared dependency specifiers and may not preserve lock-file-only resolution semantics.
+
+## Troubleshooting
+
+- **Hash or size mismatch during install**: the bundle is corrupted or was modified after creation. Rebuild or recopy the bundle.
+- **Missing package file during pack or install**: DepotPy now treats manifest/package mismatches as errors. Re-run `depotpy pack` and keep the generated bundle intact.
+- **No wheel for target platform**: try `--prefer source` only if the offline target can build source distributions, or choose a platform/Python version with wheels available.
+- **Wrong Python environment**: `depotpy install` invokes `python -m pip` through the current interpreter. Activate the intended virtual environment before installing.
+- **Dry run limitations**: `--dry-run` previews dependency names and target platforms; it does not prove that every wheel can be downloaded.

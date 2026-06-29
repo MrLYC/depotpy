@@ -1,6 +1,7 @@
 """Tests for dependency resolution and wheel download."""
 
 import hashlib
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
@@ -124,8 +125,7 @@ class TestBuildPipDownloadCmd:
             tmp_path,
             MANYLINUX_X86_64,
         )
-        assert "pip" in cmd
-        assert "download" in cmd
+        assert cmd[:4] == [sys.executable, "-m", "pip", "download"]
         assert "--dest" in cmd
         assert str(tmp_path) in cmd
         assert "--platform" in cmd
@@ -399,7 +399,7 @@ class TestDownloadPackages:
         assert mock_run.call_count == 2
         # Second call should be pip
         second_cmd = mock_run.call_args_list[1][0][0]
-        assert second_cmd[0] == "pip"
+        assert second_cmd[:4] == [sys.executable, "-m", "pip", "download"]
 
     @patch("depotpy.resolver._run_download_cmd")
     def test_pip_failure_raises(self, mock_run, tmp_path):

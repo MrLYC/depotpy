@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import tarfile
@@ -196,9 +197,15 @@ class TestPackBuilderWithFilesystem:
             path=tmp_path, name="myapp", version="1.0.0",
             dependencies=["requests"], manager=DependencyManager.PIP,
         )
-        mock_download.return_value = [
-            PackageFile("requests-2.31.0-py3-none-any.whl", "requests", "2.31.0", "abc", 100),
-        ]
+        def fake_download_packages(**kwargs):
+            download_dir = kwargs["download_dir"]
+            filename = "requests-2.31.0-py3-none-any.whl"
+            (download_dir / filename).write_bytes(b"fake")
+            return [
+                PackageFile(filename, "requests", "2.31.0", "abc", 100),
+            ]
+
+        mock_download.side_effect = fake_download_packages
 
         mock_fs = MagicMock()
 
@@ -226,9 +233,15 @@ class TestPackBuilderWithFilesystem:
             path=tmp_path, name="myapp", version="1.0.0",
             dependencies=["requests"], manager=DependencyManager.PIP,
         )
-        mock_download.return_value = [
-            PackageFile("requests-2.31.0-py3-none-any.whl", "requests", "2.31.0", "abc", 100),
-        ]
+        def fake_download_packages(**kwargs):
+            download_dir = kwargs["download_dir"]
+            filename = "requests-2.31.0-py3-none-any.whl"
+            (download_dir / filename).write_bytes(b"fake")
+            return [
+                PackageFile(filename, "requests", "2.31.0", "abc", 100),
+            ]
+
+        mock_download.side_effect = fake_download_packages
 
         options = PackOptions(
             project_path=tmp_path,
@@ -245,6 +258,7 @@ class TestBundleInstallerWithFilesystem:
     """Test BundleInstaller filesystem integration."""
 
     def _create_test_bundle(self, tmp_path: Path) -> Path:
+        pkg_data = b"fake"
         manifest_data = {
             "project_name": "myapp",
             "project_version": "1.0.0",
@@ -253,7 +267,8 @@ class TestBundleInstallerWithFilesystem:
             "packages": [{
                 "filename": "requests-2.31.0-py3-none-any.whl",
                 "name": "requests", "version": "2.31.0",
-                "sha256": "abc123", "size": 1024, "platform_tags": [],
+                "sha256": hashlib.sha256(pkg_data).hexdigest(),
+                "size": len(pkg_data), "platform_tags": [],
             }],
         }
         bundle_path = tmp_path / "bundle.tar.gz"
@@ -262,7 +277,6 @@ class TestBundleInstallerWithFilesystem:
             info = tarfile.TarInfo(name="myapp/manifest.json")
             info.size = len(data)
             tar.addfile(info, fileobj=io.BytesIO(data))
-            pkg_data = b"fake"
             pkg_info = tarfile.TarInfo(name="myapp/packages/requests-2.31.0-py3-none-any.whl")
             pkg_info.size = len(pkg_data)
             tar.addfile(pkg_info, fileobj=io.BytesIO(pkg_data))

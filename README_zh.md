@@ -4,20 +4,26 @@
 
 为 Python 项目构建可跨平台分发的离线安装包。
 
-DepotPy 分析项目依赖，为多个平台下载 wheels，将所有内容打包为 `.tar.gz` 归档文件，其中包含清单文件和安装说明。生成的离线包可以传输到无网络环境中，通过一条 `pip` 命令即可完成安装。
+DepotPy 分析项目依赖，为多个平台下载 wheels，并将依赖文件打包为 `.tar.gz` 归档文件，其中包含清单文件和安装说明。生成的离线依赖包可以传输到无网络环境中，通过 DepotPy 或 pip 安装。
 
 ## 特性
 
 - **跨平台**: 一次性下载 Linux、macOS、Windows 多平台的 wheels
 - **自动检测**: 自动识别项目使用的依赖管理工具（uv、poetry、pdm、pipenv、pip）
-- **离线可用**: 生成的离线包无需任何网络连接即可安装
-- **可验证**: manifest.json 中包含 SHA-256 哈希，用于完整性校验
+- **离线可用**: 兼容 wheel 可用时，生成的离线依赖包无需网络连接即可安装
+- **安装校验**: `depotpy install` 会在调用 pip 前校验 manifest 中的 SHA-256 和文件大小
 - **库级 API**: 既可作为 CLI 工具使用，也可作为 Python 库导入
 
 ## 安装
 
 ```bash
 pip install depotpy
+```
+
+验证安装和当前 Python 环境：
+
+```bash
+python -m depotpy --version
 ```
 
 ## 快速开始
@@ -41,14 +47,16 @@ depotpy install myapp-1.0.0-offline.tar.gz
 
 ## 架构概览
 
-![DepotPy 架构图](docs/assets/depotpy-architecture.png)
-
 DepotPy 是一个仅依赖 Python 标准库的小型 CLI 流水线：
+
+```text
+项目元数据 -> 依赖下载 -> manifest + packages -> 离线包 -> 校验后安装
+```
 
 - `depotpy.cli` 解析 `pack`、`inspect`、`install`，再分发到各命令模块。
 - `PackBuilder` 负责编排项目检测、平台解析、依赖下载、清单生成和 tarball 创建。
 - 离线包包含 `manifest.json`、`packages/` 和生成的 `README.md`。
-- `inspect` 从已有离线包读取 `manifest.json`，`install` 解压离线包并执行 `pip install --no-index --find-links ./packages`。
+- `inspect` 从已有离线包读取 `manifest.json`，`install` 校验包文件哈希/大小后，通过当前解释器的 pip 安装本地包文件。
 
 ## 文档
 

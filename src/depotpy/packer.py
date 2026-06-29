@@ -23,14 +23,22 @@ def _generate_readme(manifest: Manifest) -> str:
     package_names = sorted({p.name for p in manifest.packages})
     packages_list = "\n".join(f"  - {name}" for name in package_names)
 
-    return f"""# {manifest.project_name} {manifest.project_version} - Offline Installation Package
+    return f"""# {manifest.project_name} {manifest.project_version} - Offline Dependency Bundle
 
-## Installation
+## Recommended installation
 
-To install all packages from this offline bundle, run:
+Install with DepotPy to verify package file sizes and SHA-256 hashes before pip runs:
 
 ```bash
-pip install --no-index --find-links ./packages {" ".join(package_names)}
+depotpy install {manifest.project_name}-{manifest.project_version}-offline.tar.gz
+```
+
+## Manual installation
+
+If DepotPy is not available on the target machine, extract this bundle and install with pip directly. Manual installation does not verify `manifest.json` hashes:
+
+```bash
+python -m pip install --no-index --find-links ./packages {" ".join(package_names)}
 ```
 
 ## Contents
@@ -71,6 +79,15 @@ def _create_bundle_tarball(
     tarball_path = output_path / f"{bundle_name}.tar.gz"
     output_path.mkdir(parents=True, exist_ok=True)
 
+    missing_files = [
+        pkg.filename
+        for pkg in manifest.packages
+        if not (packages_dir / Path(pkg.filename).name).exists()
+    ]
+    if missing_files:
+        missing = ", ".join(missing_files)
+        raise RuntimeError(f"Package file(s) missing from bundle input: {missing}")
+
     with tarfile.open(tarball_path, "w:gz") as tar:
         # Add README.md
         readme_content = _generate_readme(manifest).encode("utf-8")
@@ -91,8 +108,7 @@ def _create_bundle_tarball(
         for pkg in manifest.packages:
             safe_filename = Path(pkg.filename).name  # Prevent path traversal
             pkg_file = packages_dir / safe_filename
-            if pkg_file.exists():
-                tar.add(pkg_file, arcname=f"{bundle_name}/packages/{safe_filename}")
+            tar.add(pkg_file, arcname=f"{bundle_name}/packages/{safe_filename}")
 
     return tarball_path
 

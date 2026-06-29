@@ -15,8 +15,10 @@ pip install depotpy
 Verify the installation:
 
 ```bash
-depotpy --version
+python -m depotpy --version
 ```
+
+`depotpy` and `python -m depotpy` are equivalent. The `python -m` form makes it explicit which Python environment runs DepotPy.
 
 ## Your First Offline Bundle
 
@@ -49,13 +51,13 @@ scp myapp-1.0.0-offline.tar.gz user@target-host:/tmp/
 On the target machine (no internet required):
 
 ```bash
-# Using DepotPy (if installed)
+# Using DepotPy (verifies manifest hashes and file sizes before pip runs)
 depotpy install myapp-1.0.0-offline.tar.gz
 
-# Or manually
+# Or manually without manifest verification
 tar xzf myapp-1.0.0-offline.tar.gz
 cd myapp-1.0.0-offline
-pip install --no-index --find-links ./packages <package-names>
+python -m pip install --no-index --find-links ./packages <package-names>
 ```
 
 The exact `pip install` command is included in the bundle's `README.md`.

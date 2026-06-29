@@ -11,6 +11,7 @@ from depotpy.models import PackagePreference, PackOptions
 from depotpy.output import error_json, print_error, print_json, print_text, setup_logging
 from depotpy.packer import PackBuilder
 from depotpy.platforms import get_python_version, resolve_platforms
+from depotpy.resolver import _filter_dependencies
 
 
 def _run_dry_run(args: argparse.Namespace) -> int:
@@ -29,11 +30,7 @@ def _run_dry_run(args: argparse.Namespace) -> int:
             if extra in project_info.extras:
                 dependencies.extend(project_info.extras[extra])
 
-        excluded = {e.lower() for e in (args.exclude or [])}
-        filtered_deps = [
-            dep for dep in dependencies
-            if dep.split(">=")[0].split("==")[0].split("[")[0].strip().lower() not in excluded
-        ]
+        filtered_deps = _filter_dependencies(dependencies, args.exclude or None)
 
         if json_output:
             print_json({

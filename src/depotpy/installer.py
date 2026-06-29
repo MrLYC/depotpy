@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import subprocess
+import sys
 import tarfile
 import tempfile
 from pathlib import Path
@@ -25,7 +27,7 @@ def _get_installed_packages() -> dict[str, str]:
     """
     try:
         result = subprocess.run(
-            ["pip", "list", "--format=json"],
+            [sys.executable, "-m", "pip", "list", "--format=json"],
             capture_output=True,
             text=True,
         )
@@ -64,6 +66,47 @@ def _check_conflicts(
                 )
                 break
     return conflicts
+
+
+def _compute_sha256(filepath: Path) -> str:
+    """Compute SHA-256 hash of a file."""
+    h = hashlib.sha256()
+    with open(filepath, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _validate_manifest_files(manifest: Manifest, packages_dir: Path) -> list[Path]:
+    """Validate manifest package files and return exact install paths."""
+    package_paths: list[Path] = []
+    for pkg in manifest.packages:
+        package_path = packages_dir / Path(pkg.filename).name
+        if not package_path.exists():
+            raise RuntimeError(f"Package file missing from bundle: {pkg.filename}")
+
+        actual_size = package_path.stat().st_size
+        if actual_size != pkg.size:
+            raise RuntimeError(
+                f"Package size mismatch for {pkg.filename}: "
+                f"expected {pkg.size}, got {actual_size}"
+            )
+
+        actual_sha256 = _compute_sha256(package_path)
+        if actual_sha256 != pkg.sha256:
+            raise RuntimeError(
+                f"Package SHA-256 mismatch for {pkg.filename}: "
+                f"expected {pkg.sha256}, got {actual_sha256}"
+            )
+
+        package_paths.append(package_path)
+
+    return package_paths
+
+
+def _install_requirements(manifest: Manifest) -> list[str]:
+    """Return pinned requirements for pip to resolve from verified local files."""
+    return sorted({f"{pkg.name}=={pkg.version}" for pkg in manifest.packages})
 
 
 class BundleInstaller:
@@ -122,8 +165,9 @@ class BundleInstaller:
             with tarfile.open(bundle_path, "r:gz") as tar:
                 tar.extractall(path=extract_dir, filter="data")
 
-            # Find the manifest
+            # Find the manifest and validate package files before invoking pip
             manifest, packages_dir = self._find_manifest_and_packages(extract_dir)
+            _validate_manifest_files(manifest, packages_dir)
 
             # Check conflicts if needed
             if on_conflict == ConflictPolicy.ERROR:
@@ -173,10 +217,8 @@ class BundleInstaller:
         on_conflict: ConflictPolicy = ConflictPolicy.KEEP,
     ) -> list[str]:
         """Build the pip install command."""
-        package_names = sorted({p.name for p in manifest.packages})
-
         cmd = [
-            "pip", "install",
+            sys.executable, "-m", "pip", "install",
             "--no-index",
             "--find-links", str(packages_dir),
         ]
@@ -187,5 +229,5 @@ class BundleInstaller:
         if target:
             cmd.extend(["--target", target])
 
-        cmd.extend(package_names)
+        cmd.extend(_install_requirements(manifest))
         return cmd

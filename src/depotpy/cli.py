@@ -111,7 +111,11 @@ def create_parser() -> argparse.ArgumentParser:
         "--on-conflict",
         choices=["keep", "overwrite", "error"],
         default="keep",
-        help="How to handle conflicts with installed packages (default: keep)",
+        help=(
+            "How to handle installed package conflicts: keep = do not force reinstall, "
+            "overwrite = force reinstall, error = fail on version conflicts "
+            "(default: keep)"
+        ),
     )
     install_parser.add_argument(
         "--json",

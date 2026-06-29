@@ -48,7 +48,8 @@ class TestGenerateReadme:
     def test_contains_pip_install_command(self):
         m = _sample_manifest()
         readme = _generate_readme(m)
-        assert "pip install --no-index --find-links ./packages" in readme
+        assert "python -m pip install --no-index --find-links ./packages" in readme
+        assert "depotpy install" in readme
 
     def test_contains_package_names(self):
         m = _sample_manifest()
@@ -143,6 +144,9 @@ class TestCreateBundleTarball:
         packages_dir = tmp_path / "packages"
         packages_dir.mkdir()
 
+        for pkg in manifest.packages:
+            (packages_dir / pkg.filename).write_bytes(b"fake content")
+
         output_dir = tmp_path / "output"
         result = _create_bundle_tarball(
             output_path=output_dir,
@@ -154,34 +158,31 @@ class TestCreateBundleTarball:
         with tarfile.open(result, "r:gz") as tar:
             f = tar.extractfile("myapp-1.0.0-offline/README.md")
             content = f.read().decode("utf-8")
-            assert "pip install --no-index" in content
+            assert "python -m pip install --no-index" in content
+            assert "depotpy install" in content
 
-    def test_missing_package_file_skipped(self, tmp_path):
+    def test_missing_package_file_raises(self, tmp_path):
         manifest = _sample_manifest()
         packages_dir = tmp_path / "packages"
         packages_dir.mkdir()
         # Don't create any package files
 
         output_dir = tmp_path / "output"
-        result = _create_bundle_tarball(
-            output_path=output_dir,
-            bundle_name="myapp-1.0.0-offline",
-            manifest=manifest,
-            packages_dir=packages_dir,
-        )
-
-        with tarfile.open(result, "r:gz") as tar:
-            names = tar.getnames()
-            # README and manifest should still be there
-            assert "myapp-1.0.0-offline/README.md" in names
-            assert "myapp-1.0.0-offline/manifest.json" in names
-            # But no package files
-            assert len([n for n in names if n.startswith("myapp-1.0.0-offline/packages/")]) == 0
+        with pytest.raises(RuntimeError, match=r"Package file\(s\) missing"):
+            _create_bundle_tarball(
+                output_path=output_dir,
+                bundle_name="myapp-1.0.0-offline",
+                manifest=manifest,
+                packages_dir=packages_dir,
+            )
 
     def test_creates_output_dir(self, tmp_path):
         manifest = _sample_manifest()
         packages_dir = tmp_path / "packages"
         packages_dir.mkdir()
+
+        for pkg in manifest.packages:
+            (packages_dir / pkg.filename).write_bytes(b"fake content")
 
         output_dir = tmp_path / "new" / "nested" / "dir"
         result = _create_bundle_tarball(
@@ -207,15 +208,21 @@ class TestPackBuilder:
             dependencies=["requests"],
             manager=DependencyManager.PIP,
         )
-        mock_download.return_value = [
-            PackageFile(
-                filename="requests-2.31.0-py3-none-any.whl",
-                name="requests",
-                version="2.31.0",
-                sha256="abc",
-                size=100,
-            ),
-        ]
+        def fake_download_packages(**kwargs):
+            download_dir = kwargs["download_dir"]
+            filename = "requests-2.31.0-py3-none-any.whl"
+            (download_dir / filename).write_bytes(b"fake content")
+            return [
+                PackageFile(
+                    filename=filename,
+                    name="requests",
+                    version="2.31.0",
+                    sha256="abc",
+                    size=100,
+                ),
+            ]
+
+        mock_download.side_effect = fake_download_packages
 
         output_dir = tmp_path / "output"
         options = PackOptions(
@@ -224,9 +231,7 @@ class TestPackBuilder:
         )
         builder = PackBuilder(options)
 
-        # Need to create the file in the temp dir that download_packages would create
-        # Since we mock download_packages, the files won't exist, but the tarball
-        # creation will just skip missing files
+        # Mocked download writes the package file expected by the manifest
         tarball_path, manifest = builder.build()
         assert tarball_path.exists()
         assert tarball_path.name == "myapp-1.0.0-offline.tar.gz"

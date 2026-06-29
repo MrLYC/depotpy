@@ -1,7 +1,9 @@
 """Tests for install from offline bundle."""
 
+import hashlib
 import io
 import json
+import sys
 import tarfile
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -13,8 +15,10 @@ from depotpy.commands.install import run_install
 from depotpy.models import ConflictPolicy, Manifest, PackageFile
 
 
-def _create_test_bundle(tmp_path, with_packages=True):
+def _create_test_bundle(tmp_path, with_packages=True, package_data=b"fake wheel content", sha256=None, size=None):
     """Create a test bundle with manifest and optional fake packages."""
+    package_sha256 = sha256 or hashlib.sha256(package_data).hexdigest()
+    package_size = len(package_data) if size is None else size
     manifest_data = {
         "project_name": "myapp",
         "project_version": "1.0.0",
@@ -25,8 +29,8 @@ def _create_test_bundle(tmp_path, with_packages=True):
                 "filename": "requests-2.31.0-py3-none-any.whl",
                 "name": "requests",
                 "version": "2.31.0",
-                "sha256": "abc123",
-                "size": 1024,
+                "sha256": package_sha256,
+                "size": package_size,
                 "platform_tags": [],
             },
         ],
@@ -42,12 +46,11 @@ def _create_test_bundle(tmp_path, with_packages=True):
 
         # Add fake package
         if with_packages:
-            pkg_data = b"fake wheel content"
             pkg_info = tarfile.TarInfo(
                 name="myapp-1.0.0-offline/packages/requests-2.31.0-py3-none-any.whl"
             )
-            pkg_info.size = len(pkg_data)
-            tar.addfile(pkg_info, fileobj=io.BytesIO(pkg_data))
+            pkg_info.size = len(package_data)
+            tar.addfile(pkg_info, fileobj=io.BytesIO(package_data))
 
     return bundle_path
 
@@ -60,6 +63,7 @@ class TestGetInstalledPackages:
             stdout='[{"name": "requests", "version": "2.31.0"}, {"name": "click", "version": "8.0"}]',
         )
         result = _get_installed_packages()
+        assert mock_run.call_args[0][0] == [sys.executable, "-m", "pip", "list", "--format=json"]
         assert result == {"requests": "2.31.0", "click": "8.0"}
 
     @patch("depotpy.installer.subprocess.run")
@@ -138,11 +142,12 @@ class TestBundleInstaller:
 
         mock_run.assert_called_once()
         cmd = mock_run.call_args[0][0]
-        assert "pip" in cmd
-        assert "install" in cmd
+        assert cmd[:4] == [sys.executable, "-m", "pip", "install"]
         assert "--no-index" in cmd
         assert "--find-links" in cmd
-        assert "requests" in cmd
+        assert "requests==2.31.0" in cmd
+        assert not any(arg.endswith("requests-2.31.0-py3-none-any.whl") for arg in cmd)
+        assert "requests" not in cmd
 
     @patch("depotpy.installer.subprocess.run")
     def test_install_with_target(self, mock_run, tmp_path):
@@ -178,6 +183,40 @@ class TestBundleInstaller:
         installer = BundleInstaller(bundle_path)
         with pytest.raises(ValueError, match="No manifest.json"):
             installer.install()
+
+    def test_install_missing_manifest_package_file(self, tmp_path):
+        bundle = _create_test_bundle(tmp_path, with_packages=False)
+        installer = BundleInstaller(bundle)
+        with pytest.raises(RuntimeError, match="Package file missing"):
+            installer.install()
+
+    def test_install_package_size_mismatch(self, tmp_path):
+        bundle = _create_test_bundle(tmp_path, size=999)
+        installer = BundleInstaller(bundle)
+        with pytest.raises(RuntimeError, match="Package size mismatch"):
+            installer.install()
+
+    def test_install_package_sha256_mismatch(self, tmp_path):
+        bundle = _create_test_bundle(tmp_path, sha256="0" * 64)
+        installer = BundleInstaller(bundle)
+        with pytest.raises(RuntimeError, match="Package SHA-256 mismatch"):
+            installer.install()
+
+    def test_build_install_cmd_uses_pinned_requirements_for_platform_selection(self, tmp_path):
+        manifest = Manifest(
+            project_name="myapp",
+            project_version="1.0.0",
+            python_version="3.11",
+            platforms=["manylinux2014_x86_64", "macosx_11_0_arm64"],
+            packages=[
+                PackageFile("demo-1.0.0-cp311-cp311-manylinux2014_x86_64.whl", "demo", "1.0.0", "a", 1),
+                PackageFile("demo-1.0.0-cp311-cp311-macosx_11_0_arm64.whl", "demo", "1.0.0", "b", 1),
+            ],
+        )
+        installer = BundleInstaller(tmp_path / "bundle.tar.gz")
+        cmd = installer._build_install_cmd(manifest, tmp_path / "packages")
+        assert cmd.count("demo==1.0.0") == 1
+        assert not any(arg.endswith(".whl") for arg in cmd)
 
     @patch("depotpy.installer.subprocess.run")
     def test_keep_policy_no_force(self, mock_run, tmp_path):

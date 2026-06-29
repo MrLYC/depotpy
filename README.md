@@ -4,20 +4,26 @@
 
 Build cross-platform offline installation packages for Python projects.
 
-DepotPy analyzes your project's dependencies, downloads wheels for multiple platforms, and bundles everything into a `.tar.gz` archive with a manifest and installation instructions. The resulting bundle can be transferred to offline environments and installed with a single `pip` command.
+DepotPy analyzes your project's dependencies, downloads wheels for multiple platforms, and bundles them into a `.tar.gz` dependency archive with a manifest and installation instructions. The resulting bundle can be transferred to offline environments and installed with DepotPy or pip.
 
 ## Features
 
 - **Cross-platform**: Download wheels for Linux, macOS, and Windows in one go
 - **Auto-detection**: Automatically detects your dependency manager (uv, poetry, pdm, pipenv, pip)
-- **Offline-ready**: Generated bundles work without any network access
-- **Verifiable**: SHA-256 hashes in manifest.json for integrity checks
+- **Offline-ready**: Generated dependency bundles work without network access when compatible wheels are available
+- **Verified install**: `depotpy install` checks manifest SHA-256 hashes and file sizes before invoking pip
 - **Library API**: Use as a CLI tool or import as a Python library
 
 ## Installation
 
 ```bash
 pip install depotpy
+```
+
+Verify the install and active Python environment:
+
+```bash
+python -m depotpy --version
 ```
 
 ## Quick Start
@@ -41,14 +47,16 @@ depotpy install myapp-1.0.0-offline.tar.gz
 
 ## Architecture
 
-![DepotPy architecture](docs/assets/depotpy-architecture.png)
-
 DepotPy is organized as a small standard-library-only CLI pipeline:
+
+```text
+project metadata -> dependency download -> manifest + packages -> offline bundle -> verified install
+```
 
 - `depotpy.cli` parses `pack`, `inspect`, and `install`, then dispatches to the command modules.
 - `PackBuilder` orchestrates project detection, platform resolution, package download, manifest generation, and tarball creation.
 - The offline bundle contains `manifest.json`, `packages/`, and a generated `README.md`.
-- `inspect` reads `manifest.json` from an existing bundle, while `install` extracts the bundle and runs `pip install --no-index --find-links ./packages`.
+- `inspect` reads `manifest.json` from an existing bundle, while `install` verifies package hashes/sizes and invokes the current interpreter's pip with local package files.
 
 ## Documentation
 

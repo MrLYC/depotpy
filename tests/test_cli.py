@@ -1,5 +1,6 @@
 """Tests for CLI entry point."""
 
+import runpy
 from unittest.mock import patch
 
 import pytest
@@ -129,3 +130,12 @@ class TestMainDispatch:
     def test_dispatch_returns_error_code(self, mock_run):
         result = main(["pack", "/some/project"])
         assert result == 1
+
+
+class TestModuleExecution:
+    @patch("depotpy.cli.main", return_value=0)
+    def test_python_m_entrypoint(self, mock_main):
+        with pytest.raises(SystemExit) as exc_info:
+            runpy.run_module("depotpy.__main__", run_name="__main__")
+        assert exc_info.value.code == 0
+        mock_main.assert_called_once()

@@ -124,6 +124,21 @@ class TestRunPack:
         assert data["project_name"] == "myapp"
         assert "requests>=2.0" in data["dependencies"]
 
+    @patch("depotpy.commands.pack.detect_project")
+    def test_dry_run_exclude_uses_dependency_name_parsing(self, mock_detect, tmp_path, capsys):
+        from depotpy.models import DependencyManager, ProjectInfo
+        mock_detect.return_value = ProjectInfo(
+            path=tmp_path, name="myapp", version="1.0.0",
+            dependencies=["requests~=2.0", "click"],
+            manager=DependencyManager.PIP,
+        )
+        args = _make_args(project_path=str(tmp_path), dry_run=True, exclude=["requests"])
+        result = run_pack(args)
+        assert result == 0
+        err = capsys.readouterr().err
+        assert "requests~=2.0" not in err
+        assert "click" in err
+
     @patch("depotpy.commands.pack.PackBuilder")
     def test_passes_options(self, mock_builder_cls, tmp_path):
         mock_builder = MagicMock()

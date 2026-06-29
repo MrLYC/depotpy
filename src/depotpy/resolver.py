@@ -6,6 +6,7 @@ import hashlib
 import logging
 import re
 import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -166,7 +167,7 @@ def _build_pip_download_cmd(
 ) -> list[str]:
     """Build a pip download command."""
     return _build_download_cmd(
-        ["pip", "download"], dependencies, download_dir, platform,
+        [sys.executable, "-m", "pip", "download"], dependencies, download_dir, platform,
         python_version, "dotless", exclude, prefer,
     )
 
